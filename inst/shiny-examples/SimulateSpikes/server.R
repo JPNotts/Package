@@ -18,14 +18,14 @@ server <- function(input, output,session) {
   observeEvent(input$toggle, {
     if(toggle == TRUE){
       toggle <<- FALSE
-      enable("int.fn"); enable("ISI") ; enable("hyper"); enable("end.time"); enable("t.min"); enable("multi")
-      enable("button"); enable("download")
+      shinyjs::enable("int.fn"); shinyjs::enable("ISI") ; shinyjs::enable("hyper"); shinyjs::enable("end.time"); shinyjs::enable("t.min"); shinyjs::enable("multi")
+      shinyjs::enable("button"); shinyjs::enable("download")
 
     }
     else{
       toggle <<- TRUE
-      disable("int.fn"); disable("ISI") ; disable("hyper"); disable("end.time"); disable("t.min"); disable("multi")
-      disable("button"); disable("download")
+      shinyjs::disable("int.fn"); shinyjs::disable("ISI") ; shinyjs::disable("hyper"); shinyjs::disable("end.time"); shinyjs::disable("t.min"); shinyjs::disable("multi")
+      shinyjs::disable("button"); shinyjs::disable("download")
     }
   })
 
@@ -57,7 +57,7 @@ server <- function(input, output,session) {
   })
 
   get.spikes <- eventReactive(input$button, {
-    enable("download")
+    shinyjs::enable("download")
     # Get the inputs
     end.time <- input$end.time ; t.min <- input$t.min ; ISI <- input$ISI ; multi <- input$multi ; int.fn <- input$int.fn ; hyper <- input$hyper
     d.spikes <- MultiSpikes(input$end.time, int.fn(), input$hyper, steps =2000, T.min = input$t.min, ISI.type  = ISI(), multi = input$multi, add.end = TRUE, do.log = T)
@@ -66,7 +66,7 @@ server <- function(input, output,session) {
 
   check <- eventReactive(input$button, {
     message <- NULL
-    enable("toggle")
+    shinyjs::enable("toggle")
     # Firstly check that the intensity function won't create too many spikes.
     int <- sum(int.fn()*input$end.time/8000)
     if(int/2000 > 0.3){

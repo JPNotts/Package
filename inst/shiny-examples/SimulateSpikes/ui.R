@@ -5,14 +5,14 @@
 
 
 # Define UI
-fluidPage(useShinyjs(),  # Set up shinyjs,
-          theme = shinytheme("lumen"),
+fluidPage(shinyjs::useShinyjs(),  # Set up shinyjs,
+          theme = shinythemes::shinytheme("lumen"),
                   titlePanel("Simulate spike sequences"),
                   sidebarLayout(
                     sidebarPanel(
 
                       # Button to go back to welcome screen and cancel.
-                      disabled( actionButton("toggle", "Toggle help screen", width = '250px')),
+                      shinyjs::disabled( actionButton("toggle", "Toggle help screen", width = '250px')),
 
                       # Select type of trend to plot
                       selectInput(inputId = "ISI", label = strong("ISI distribution:"),
@@ -45,7 +45,7 @@ fluidPage(useShinyjs(),  # Set up shinyjs,
                       hr(),
                       actionButton(inputId = "button", label = "Get Spikes"),
                       # Button for downloading
-                      disabled( downloadButton("download", "Download", width = '250px'))
+                      shinyjs::disabled( downloadButton("download", "Download", width = '250px'))
                     ),
 
                     # Output: Description, lineplot, and reference
