@@ -1,13 +1,15 @@
 
-#' Calculate the pdf.
+#' Calculate the probability density.
 #'
-#' @param t The
+#'
+#'
+#' @param t The time of the current spike
 #' @param last.spike The time of the previous spike.
 #' @param hyper The ISI parameter value
 #' @param end.time The end time of the experiment
 #' @param x The intensity function --- defined in 0,end.time
 #' @param X The integral of the intensity function
-#' @param ISI.type The ISI distribution
+#' @param ISI.type The ISI distribution.
 #' @param do.log Flag for whether to calculate the pdf on the log scale.
 #'
 #' @return The probability density of a spike at time t given the last spike was at last.spike.
@@ -19,7 +21,10 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
   ISIs <- c('Gamma', 'Exponential', 'InverseGaussian', 'LogNormal', 'Weibull',
             'InverseGaussianOLD','Gamma2', 'InverseGaussian2', 'LogNormal2', 'Weibull2' )
   if(!(ISI.type %in% ISIs)){ stop("Invalid ISI.type. See help documentation for allowable ISI.type.")}
-
+  ISI2 <- c('Gamma2', 'InverseGaussian2', 'LogNormal2', 'Weibull2')
+  if(ISI.type %in% ISI2 && length(hyper) != 2){stop("Your choice of ISI.type requires two inputs for hyper.")}
+  ISI2 <- c('Gamma', 'InverseGaussian', 'LogNormal', 'Weibull','InverseGaussianOLD')
+  if(ISI.type %in% ISI2 && length(hyper) != 1){stop("Your choice of ISI.type requires one inputs for hyper. For example hyper=1.")}
 
   step.size <- end.time/(length(x)-1)
   x <- x[t/step.size]

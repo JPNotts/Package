@@ -19,7 +19,7 @@ fluidPage(shinyjs::useShinyjs(),  # Set up shinyjs,
                                   choices = c("Exponential","Gamma", "Inverse Gaussian", "Log Normal", "Weibull"),
                                   selected = "Gamma"),
 
-                      conditionalPanel(condition = "input.ISI != 'Poisson'",
+                      conditionalPanel(condition = "input.ISI != 'Exponential'",
                                        numericInput(inputId = "hyper", label = strong("ISI parameter value:"), 10)
                       ),
 

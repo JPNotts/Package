@@ -20,6 +20,7 @@ Imports:
     shinythemes
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat
 VignetteBuilder: knitr
 URL: https://github.com/JPNotts/Package
