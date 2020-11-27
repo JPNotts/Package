@@ -15,6 +15,12 @@
 #'
 #' @examples
 PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
+  # Check the ISI type is allowable
+  ISIs <- c('Gamma', 'Exponential', 'InverseGaussian', 'LogNormal', 'Weibull',
+            'InverseGaussianOLD','Gamma2', 'InverseGaussian2', 'LogNormal2', 'Weibull2' )
+  if(!(ISI.type %in% ISIs)){ stop("Invalid ISI.type. See help documentation for allowable ISI.type.")}
+
+
   step.size <- end.time/(length(x)-1)
   x <- x[t/step.size]
   if(last.spike - 0 < 1e-10){
@@ -24,7 +30,7 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
     X <- X[t/step.size] - X[last.spike/step.size]
   }
   if(!do.log){
-    if(ISI.type == "Poisson"){
+    if(ISI.type == "Exponential"){
       out <- x * exp(-X)
     }
     if(ISI.type == "Gamma"){
@@ -35,19 +41,19 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
       a <- hyper[1] ; b <- hyper[2]
       out <- (b * x * (b*X)**(a-1) * exp(-b*X) )/(gamma(a))
     }
-    if(ISI.type == "InvGauss"){
+    if(ISI.type == "InverseGaussianOLD"){
       a <- hyper
       out <- (x/(sqrt(2*pi*(X**3) ))) * exp(-( (X-a)**2)/(2*X*(a**2)))
     }
-    if(ISI.type == "InvGauss2"){
+    if(ISI.type == "InverseGaussian2"){
       mu <- hyper[1] ; l <- hyper[2]
       out <- (x*sqrt(l)/(sqrt(2*pi*(X**3) ))) * exp(-( l*(X-mu)**2)/(2*X*(mu**2)))
     }
-    if(ISI.type == "NewIG"){
+    if(ISI.type == "InverseGaussian"){
       l <- hyper
       out <- x*sqrt(l/(2*pi*X**3)) * exp((-l* (X-1)**2)/(2*X))
     }
-    if(ISI.type == "LN"){
+    if(ISI.type == "LogNormal"){
       mu <- hyper
       out <- (x/(2*X*sqrt(mu*pi)))*exp(-((log(X) + mu)**2)/(4*mu))
     }
@@ -60,9 +66,13 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
       l <- 1/(gamma(1+1/k))
       out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
     }
+    if(ISI.type == "Weibull2"){
+      k <- hyper[1]; l <- hyper[2]
+      out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
+    }
   }
   else if (do.log){
-    if(ISI.type == "Poisson"){
+    if(ISI.type == "Exponential"){
       out <- log(x)  -X
     }
     if(ISI.type == "Gamma"){
@@ -70,12 +80,12 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
       # out <- (g * x * (g*X)**(g-1) * exp(-g*X) )/(gamma(g))
       out <- g*log(g) + log(x) +(g-1)*log(X)  -g*X - lgamma(g)
     }
-    if(ISI.type == "NewIG"){
+    if(ISI.type == "InverseGaussian"){
       l <- hyper
       # out <- x*sqrt(l/(2*pi*X**3)) * exp((-l* (X-1)**2)/(2*X))
       out <- log(x)+ 0.5*log(l) - 0.5*log(2*pi) - 1.5*log(X) - l* ((X-1)**2)/(2*X)
     }
-    if(ISI.type == "LN"){
+    if(ISI.type == "LogNormal"){
       mu <- hyper
       out <- (x/(2*X*sqrt(mu*pi)))*exp(-((log(X) + mu)**2)/(4*mu))
       out <- log(x) - 0.5*log(2*pi) - 0.5*log(mu) - log(X) -((log(X) + mu)**2)/(4*mu)
@@ -85,6 +95,31 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
       l <- 1/(gamma(1+1/k))
       # out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
       out <- log(x)+log(k) + (k-1)*log(X) - k*log(l) - (X/l)**k
+    }
+    if(ISI.type == "Gamma2"){
+      a <- hyper[1] ; b <- hyper[2]
+      # out <- (b * x * (b*X)**(a-1) * exp(-b*X) )/(gamma(a))
+      out <- log(x) +a*log(b) +(a-1)*log(X) - b*X - lgamma(a)
+    }
+    if(ISI.type == "InverseGaussianOLD"){
+      a <- hyper
+      # out <- (x/(sqrt(2*pi*(X**3) ))) * exp(-( (X-a)**2)/(2*X*(a**2)))
+      out <- log(x) - 0.5*log(2*pi) - 1.5*log(X) - (((X-mu)**2)/(2*mu**2*X))
+    }
+    if(ISI.type == "InverseGaussian2"){
+      mu <- hyper[1] ; l <- hyper[2]
+      # out <- (x*sqrt(l)/(sqrt(2*pi*(X**3) ))) * exp(-( l*(X-mu)**2)/(2*X*(mu**2)))
+      out <- log(x) + 0.5*log(l) - 0.5*log(2*pi) - 1.5*log(X) - ((l*(X-mu)**2)/(2*mu**2*X))
+    }
+    if(ISI.type == "LogNormal2"){
+      mu <- hyper[1] ; sigma <- hyper[2]
+      # out <- (x/(sigma*X*sqrt(2*pi)))*exp(-((log(X) - mu)**2)/(2*sigma**2))
+      out <- log(x) - log(X) - log(sigma) - 0.5*log(2*pi) - ((log(X)-u)**2)/(2*sigma**2)
+    }
+    if(ISI.type == "Weibull2"){
+      k <- hyper[1]; l <- hyper[2]
+      # out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
+      out <-   log(x) + log(k) + (k-1)*log(X) - k*log(l) - (X/l)**k
     }
   }
 
@@ -110,11 +145,10 @@ Spikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.type 
   # Do some checks initially.
   {
     if((length(int.fn)-1)%%steps!=0){
-      stop("The number of steps doesn't divide into the discretization of the intensity funtion.\n","
-           steps = ",steps,", length intensity function = ", length(int.fn)-1, ".\n")
+      stop("The number of steps doesn't divide into the discretization of the intensity funtion.\n")
     }
     if(ISI.type == "Gamma" && hyper<=0){
-      stop("Parameter gam must be >0. \n")
+      stop("hyper must be >0. \n")
     }
     if(max(int.fn)*(end.time/steps)>0.3){
       cat("Warning! The discretisation may not be fine enough.\n I.e max intensity =",max(int.fn),

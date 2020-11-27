@@ -16,7 +16,7 @@ fluidPage(shinyjs::useShinyjs(),  # Set up shinyjs,
 
                       # Select type of trend to plot
                       selectInput(inputId = "ISI", label = strong("ISI distribution:"),
-                                  choices = c("Poisson","Gamma", "Inverse Gaussian", "Log Normal", "Weibull"),
+                                  choices = c("Exponential","Gamma", "Inverse Gaussian", "Log Normal", "Weibull"),
                                   selected = "Gamma"),
 
                       conditionalPanel(condition = "input.ISI != 'Poisson'",

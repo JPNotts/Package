@@ -48,10 +48,10 @@ server <- function(input, output,session) {
   })
 
   ISI <- eventReactive(input$button, {
-    if(input$ISI == "Poisson"){ISI.type = "Poisson"}
+    if(input$ISI == "Exponential"){ISI.type = "Exponential"}
     if(input$ISI == "Gamma"){ISI.type = "Gamma"}
-    if(input$ISI == "Inverse Gaussian"){ISI.type = "NewIG"}
-    if(input$ISI == "Log Normal"){ISI.type = "LN"}
+    if(input$ISI == "Inverse Gaussian"){ISI.type = "InverseGaussian"}
+    if(input$ISI == "Log Normal"){ISI.type = "LogNormal"}
     if(input$ISI == "Weibull"){ISI.type = "Weibull"}
     return(ISI.type)
   })
