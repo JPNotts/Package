@@ -1,5 +1,5 @@
 <!-- badges: start -->
-  [![Travis build status](https://travis-ci.com/JPNotts/Package.svg?branch=master)](https://travis-ci.com/JPNotts/Package)
+  [![Travis build status](https://travis-ci.com/JPNotts/Package.svg?branch=main)](https://travis-ci.com/JPNotts/Package)
   <!-- badges: end -->
 
 ## Installation
