@@ -132,7 +132,7 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
 }
 
 
-#' Title
+#' Simulate a single spike sequence
 #'
 #' @param end.time The length of time we want to simulate spikes
 #' @param int.fn The intensity function
@@ -234,7 +234,7 @@ Spikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.type 
 }
 
 
-#' Title
+#' Simulate multiple spike sequences
 #'
 #' @param end.time The length of time we want to simulate spikes
 #' @param int.fn The intensity function
