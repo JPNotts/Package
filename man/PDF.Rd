@@ -2,12 +2,12 @@
 % Please edit documentation in R/SimulatingSpikes.R
 \name{PDF}
 \alias{PDF}
-\title{Calculate the pdf.}
+\title{Calculate the probability density.}
 \usage{
 PDF(t, last.spike, hyper, end.time, x, X, ISI.type, do.log = F)
 }
 \arguments{
-\item{t}{The}
+\item{t}{The time of the current spike}
 
 \item{last.spike}{The time of the previous spike.}
 
@@ -19,7 +19,7 @@ PDF(t, last.spike, hyper, end.time, x, X, ISI.type, do.log = F)
 
 \item{X}{The integral of the intensity function}
 
-\item{ISI.type}{The ISI distribution}
+\item{ISI.type}{The ISI distribution.}
 
 \item{do.log}{Flag for whether to calculate the pdf on the log scale.}
 }
@@ -27,5 +27,5 @@ PDF(t, last.spike, hyper, end.time, x, X, ISI.type, do.log = F)
 The probability density of a spike at time t given the last spike was at last.spike.
 }
 \description{
-Calculate the pdf.
+Calculate the probability density.
 }

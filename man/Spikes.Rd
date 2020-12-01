@@ -2,7 +2,7 @@
 % Please edit documentation in R/SimulatingSpikes.R
 \name{Spikes}
 \alias{Spikes}
-\title{Title}
+\title{Simulate a single spike sequence}
 \usage{
 Spikes(
   end.time,
@@ -33,5 +33,5 @@ Spikes(
 List where $spikes contains the spike sequence and $err gives the max error
 }
 \description{
-Title
+Simulate a single spike sequence
 }

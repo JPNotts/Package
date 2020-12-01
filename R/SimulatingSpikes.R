@@ -119,7 +119,7 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
     if(ISI.type == "LogNormal2"){
       mu <- hyper[1] ; sigma <- hyper[2]
       # out <- (x/(sigma*X*sqrt(2*pi)))*exp(-((log(X) - mu)**2)/(2*sigma**2))
-      out <- log(x) - log(X) - log(sigma) - 0.5*log(2*pi) - ((log(X)-u)**2)/(2*sigma**2)
+      out <- log(x) - log(X) - log(sigma) - 0.5*log(2*pi) - ((log(X)-mu)**2)/(2*sigma**2)
     }
     if(ISI.type == "Weibull2"){
       k <- hyper[1]; l <- hyper[2]

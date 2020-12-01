@@ -2,7 +2,7 @@
 % Please edit documentation in R/SimulatingSpikes.R
 \name{MultiSpikes}
 \alias{MultiSpikes}
-\title{Title}
+\title{Simulate multiple spike sequences}
 \usage{
 MultiSpikes(
   end.time,
@@ -39,5 +39,5 @@ MultiSpikes(
 Matrix containing multiple spikes sequences
 }
 \description{
-Title
+Simulate multiple spike sequences
 }

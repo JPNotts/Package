@@ -24,3 +24,4 @@ Suggests:
     testthat
 VignetteBuilder: knitr
 URL: https://github.com/JPNotts/Package
+BugReports: https://github.com/JPNotts/Package/issues
