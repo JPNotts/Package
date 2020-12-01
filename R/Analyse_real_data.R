@@ -384,3 +384,220 @@ csv_to_spike <- function(filename, time.step = 2, transients = 2000, spike.occur
   return(output)
 }
 
+
+#' Show spikes relative to raw data.
+#'
+#' @param data time series data.
+#' @param transients transient periods where we want to remove spikes.
+#' @param time.step Vector of time from the time series data, or if step size is regular the time step of the experiment.
+#' @param spike.occur threshold where we record spikes.
+#' @param val.change vector of times where the threshold value changes.
+#' @param reset concentration at which we say a spike is over, default is set to spike.occur.
+#' @param closeness Value which if two spikes are within this distance they are merged.
+#' @param return.ans Flag, where if TRUE we return the spikes, else we plot the spikes relative to the raw data.
+#'
+#' @return Spikes relative to their original position.
+#' @export
+#'
+show_spikes <-function(data,transients = 2000, time.step = 2, spike.occur = 0.6, val.change =NULL, reset = spike.occur, closeness = 20, return.ans = TRUE){
+  spikes <- raw_spike_seq(data, time.step, spike.occur, val.change, reset)
+  # print(spikes)
+  # Now remove tranisents but don't shift time.
+  # ---------
+
+  time <- transients
+  cuts.left <- (length(time)+1)/2
+
+  # Cut the end section off if the interval contains the end time.
+  if(time[length(time)] > spikes[length(spikes)] && length(time) > 2){
+    new.end <- time[length(time) - 1]
+    spikes <- spikes[which(spikes < new.end)]
+    cuts.left <- cuts.left - 1
+  }
+
+  # Loop to cut all the sections not at the beginning.
+  while(cuts.left >1.5){
+    t.lower <- time[2*(cuts.left-1)] ; t.upper <- time[2*cuts.left-1]
+    last.spike <- max(which(spikes < t.lower))
+    next.spike <- min(which(spikes > t.upper))
+    time.gap <- spikes[next.spike] - spikes[last.spike]
+    spikes <- c(spikes[1:last.spike], spikes[(next.spike+1):length(spikes)] )
+    cuts.left <- cuts.left-1
+  }
+  # print(spikes)
+  # Remove the transients at the start, corresponds to time before time[1].
+  if( time[1] > spikes[1]){        # Check the time occurs after the first spike
+    if(length(spikes) == 2){
+      spikes <- spikes[-1]
+    }
+    else{
+      last.spike <- max(which(spikes < time[1]))
+      start.time <- spikes[last.spike+1]
+      spikes <- spikes[-(1:(last.spike+1))]
+    }
+
+  }
+  # --------------
+  # print(spikes)
+  spikes <- spike_merge(spikes, closeness, data=data, time.step=time.step)
+
+  if(return.ans){
+    return(spikes)
+  }
+  if(length(time.step)==1){
+    xaxis <- (seq(time.step,length(data)*time.step, time.step))
+  }
+  if(length(time.step) == length(data)){
+    xaxis <- time.step
+  }
+  graphics::plot( xaxis ,data,type="n",cex =1.4, cex.lab = 1.5,cex.axis =1.5)
+  graphics::lines(xaxis, data)
+  graphics::points(spikes, rep(0.4,length(spikes)), col="red",pch=20)
+
+}
+
+
+#' Get spikes for the shiny app.
+#'
+#' @param data time series data.
+#' @param time.step Vector of time from the time series data, or if step size is regular the time step of the experiment.
+#' @param thres Threshold values in form c(spike.occur, val.change)
+#' @param lin.trend Flag, where if TRUE we remove linear trends.
+#' @param trans2_low lower bound of second transient period
+#' @param trans2_high upper bound of secont transient period
+#' @param trans1 first transient period from 0 to trans1.
+#' @param trans3 lower bound of third transient period , where the upper bound is T, the end of experiment time.
+#' @param closeness Value which if two spikes are within this distance they are merged.
+#'
+#' @return spikes
+#' @export
+#'
+get_spikes_app <- function(data,time.step, thres, lin.trend, trans2_low, trans2_high, trans1, trans3, closeness){
+  # Check closeness is not NA or ''.
+  if(is.na(closeness) || closeness == ''){
+    closeness = 1
+  }
+
+  # Now need to save transients
+  if(trans1 == "" || is.na(trans1)){
+    trans1 <- 0
+  }
+  # Set the trainsients. If trans1_lower = NA need to set to 0.
+  transients <- c(trans1, min(trans2_low, trans2_high) , max(trans2_low, trans2_high) )
+  if(any(!is.na(transients))){
+    transients <- transients[!is.na(transients)]
+  }
+  else{ transients <- 0}
+
+  # Conpute spike.occur and val.change
+  text <- paste0("c(",thres,")",collapse = "")
+  spike.occur <- eval(parse(text = text))
+  leng <- length(spike.occur)
+  if (leng > 1){
+    val.change <- spike.occur[(leng/2+1.5):leng]
+    spike.occur <-spike.occur[-((leng/2+1.5):leng)]
+  }
+  else{
+    val.change <- NULL
+  }
+
+  # Set time.step
+  time.step = time.step
+
+
+  # If we have trans 3 remove the end of the experiment
+  if(!is.na(trans3)){
+    max.time <- max(which(time.step < (trans3 + 1e-10)))
+  }
+  else{max.time <- length(time.step)}
+  # d <<- data[1:max.time] ; tran <<- transients ; ti <<- time.step[1:max.time] ; s <<- spike.occur
+  # v <<- val.change ; cl <<- closeness
+  spikes <- data_to_spike(data[1:max.time],transients = transients, time.step = time.step[1:max.time], spike.occur = spike.occur , val.change =val.change, closeness = closeness,
+                                     rm.trend = FALSE)
+
+   spike.pos <- show_spikes(data[1:max.time],transients = transients, time.step = time.step[1:max.time], spike.occur = spike.occur,val.change =val.change,
+                           closeness = closeness, return.ans = TRUE)
+
+  # Do we need to remove linear trends?
+  if(lin.trend){
+    if(length(transients) == 3){
+      # Next need to check whether the second transient period overlaps the end time.
+      if(transients[3] > max.time){
+        # It does so only one trend needs removing.
+        # print('2nd trans period overlaps')
+        # print(spikes)
+        spikes <- ISI_to_spike(remove_trend(spike_to_ISI(spikes, adjust = FALSE), rm.end.time = TRUE))
+      }
+      else{
+        # It doesn't overlap so need to remove both trends.
+        # Find how many ISIs occur before the transients.
+        no.low <- length(spike.pos[spike.pos < trans2_low])
+
+        # Split spike sequence into two
+        spike.low <- spikes[1:no.low]
+        spike.high <- spikes[(no.low+1):(length(spikes))]
+
+        # Convert spikes to ISI and remove trends
+        ISI.low <- remove_trend(spike_to_ISI(spike.low), rm.end.time = FALSE)
+        ISI.high <-remove_trend(spike_to_ISI(spike.high, adjust = TRUE), rm.end.time = TRUE)
+
+        # Join the ISIs together.
+        spikes <- ISI_to_spike(c(ISI.low, ISI.high))
+      }
+    }
+    else{
+      # Need to only remove one transient period.
+      spikes <- data_to_spike(data[1:max.time],transients = transients, time.step = time.step[1:max.time], spike.occur = spike.occur , val.change =val.change, closeness = closeness,
+                                         rm.trend = TRUE)
+    }
+  }
+
+  return(spikes)
+}
+
+
+#' Retrieve spikes from store and data.
+#'
+#' @param data matrix containing raw time series data in columns, where the first column is time index.
+#' @param store matrix containing threshold information
+#'
+#' @return matrix of spikes where each column is another spike sequence.
+#' @export
+#'
+get_all_spikes_app <- function(data, store){
+  spikes <- NULL
+  max.length <- 0
+  for(i in 1:ncol(data)){
+    print(i)
+    if(store[i,1] == '' || is.na(store[i,1])){
+      spikes <- cbind(spikes, rep(NA,max.length))
+      next
+    }
+    spikes.cur <- get_spikes_app(data[,i+1],time.step = data[,1], thres = store[i,1], lin.trend = store[i,6], trans2_low = store[i,5],
+                                        trans2_high = store[i,4], trans1 = store[i,2], trans3 = store[i,7], closeness = store[i,8])
+    # What is the length of the new spike sequence.
+    new.length <- length(spikes.cur)
+
+    # If the new length is shorter than the previous longest add NA's to it.
+    if(new.length < max.length){
+      diff <- max.length - new.length
+      spikes.cur <- c(spikes.cur, rep(NA,diff))
+    }
+    #  If the new length is longer than any others adjoin NA to table of spikes.
+    else if(new.length > max.length){
+      if(i == 1){ # Set max length to th
+        max.length <- new.length
+      }
+      if(i > 1){
+        diff <- new.length - max.length
+        spikes <- rbind(spikes, matrix(NA, ncol = ncol(spikes), nrow = diff))
+        max.length <- new.length
+      }
+
+    }
+    # cat('dim Spikes = ', dim(spikes),'.\n')
+    # cat('dim spikes.cur = ', length(spikes.cur),'.\n')
+    spikes <- cbind(spikes,spikes.cur)
+  }
+  return(spikes)
+}
