@@ -17,6 +17,7 @@ death(
   sum.of.prob,
   lambda,
   T.min = NULL,
+  max.T.min = NA,
   ISI.type = "Gamma",
   do.log,
   which.heights = "independent"
@@ -46,6 +47,8 @@ death(
 \item{lambda}{Parameter of the Poisson distribution.}
 
 \item{T.min}{Refractory period.}
+
+\item{max.T.min}{Maximal allowed T.min values from d.spikes.}
 
 \item{ISI.type}{The ISI distribution.}
 

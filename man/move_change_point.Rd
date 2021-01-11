@@ -10,6 +10,7 @@ move_change_point(
   spikes,
   hyper.param,
   T.min = NULL,
+  max.T.min = NA,
   ISI.type = "Gamma",
   do.log
 )
@@ -24,6 +25,8 @@ move_change_point(
 \item{hyper.param}{ISI parameter.}
 
 \item{T.min}{Refractory period.}
+
+\item{max.T.min}{Maximal allowed T.min values from d.spikes.}
 
 \item{ISI.type}{The ISI distribution.}
 
