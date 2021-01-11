@@ -17,7 +17,9 @@ Imports:
     stats,
     shiny,
     shinyjs,
-    shinythemes
+    shinythemes,
+    pracma,
+    mvtnorm
 Suggests: 
     knitr,
     rmarkdown,
