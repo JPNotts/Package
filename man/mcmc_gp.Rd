@@ -11,7 +11,7 @@ mcmc_gp(
   burn,
   steps,
   w,
-  prior.x = c(1000, 0.001),
+  prior.x = c(1000, 1e-05),
   hyper.param = c(1, 0.001),
   ISI.type = "Gamma",
   sigma.h = NA,

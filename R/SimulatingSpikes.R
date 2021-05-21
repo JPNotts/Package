@@ -1,137 +1,4 @@
 
-#' Calculate the probability density.
-#'
-#'
-#'
-#' @param t The time of the current spike
-#' @param last.spike The time of the previous spike.
-#' @param hyper The ISI parameter value
-#' @param end.time The end time of the experiment
-#' @param x The intensity function --- defined in 0,end.time
-#' @param X The integral of the intensity function
-#' @param ISI.type The ISI distribution.
-#' @param do.log Flag for whether to calculate the pdf on the log scale.
-#'
-#' @return The probability density of a spike at time t given the last spike was at last.spike.
-#' @export
-#'
-#' @examples
-PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
-  # Check the ISI type is allowable
-  ISIs <- c('Gamma', 'Exponential', 'InverseGaussian', 'LogNormal', 'Weibull',
-            'InverseGaussianOLD','Gamma2', 'InverseGaussian2', 'LogNormal2', 'Weibull2' )
-  if(!(ISI.type %in% ISIs)){ stop("Invalid ISI.type. See help documentation for allowable ISI.type.")}
-  ISI2 <- c('Gamma2', 'InverseGaussian2', 'LogNormal2', 'Weibull2')
-  if(ISI.type %in% ISI2 && length(hyper) != 2){stop("Your choice of ISI.type requires two inputs for hyper.")}
-  ISI2 <- c('Gamma', 'InverseGaussian', 'LogNormal', 'Weibull','InverseGaussianOLD')
-  if(ISI.type %in% ISI2 && length(hyper) != 1){stop("Your choice of ISI.type requires one inputs for hyper. For example hyper=1.")}
-
-  step.size <- end.time/(length(x)-1)
-  x <- x[t/step.size]
-  if(last.spike - 0 < 1e-10){
-    X <- X[t/step.size]
-  }
-  else{
-    X <- X[t/step.size] - X[last.spike/step.size]
-  }
-  if(!do.log){
-    if(ISI.type == "Exponential"){
-      out <- x * exp(-X)
-    }
-    if(ISI.type == "Gamma"){
-      g <- hyper
-      out <- (g * x * (g*X)**(g-1) * exp(-g*X) )/(gamma(g))
-    }
-    if(ISI.type == "Gamma2"){
-      a <- hyper[1] ; b <- hyper[2]
-      out <- (b * x * (b*X)**(a-1) * exp(-b*X) )/(gamma(a))
-    }
-    if(ISI.type == "InverseGaussianOLD"){
-      a <- hyper
-      out <- (x/(sqrt(2*pi*(X**3) ))) * exp(-( (X-a)**2)/(2*X*(a**2)))
-    }
-    if(ISI.type == "InverseGaussian2"){
-      mu <- hyper[1] ; l <- hyper[2]
-      out <- (x*sqrt(l)/(sqrt(2*pi*(X**3) ))) * exp(-( l*(X-mu)**2)/(2*X*(mu**2)))
-    }
-    if(ISI.type == "InverseGaussian"){
-      l <- hyper
-      out <- x*sqrt(l/(2*pi*X**3)) * exp((-l* (X-1)**2)/(2*X))
-    }
-    if(ISI.type == "LogNormal"){
-      mu <- hyper
-      out <- (x/(2*X*sqrt(mu*pi)))*exp(-((log(X) + mu)**2)/(4*mu))
-    }
-    if(ISI.type == "LogNormal2"){
-      mu <- hyper[1] ; sigma <- hyper[2]
-      out <- (x/(sigma*X*sqrt(2*pi)))*exp(-((log(X) - mu)**2)/(2*sigma**2))
-    }
-    if(ISI.type == "Weibull"){
-      k <- hyper
-      l <- 1/(gamma(1+1/k))
-      out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
-    }
-    if(ISI.type == "Weibull2"){
-      k <- hyper[1]; l <- hyper[2]
-      out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
-    }
-  }
-  else if (do.log){
-    if(ISI.type == "Exponential"){
-      out <- log(x)  -X
-    }
-    if(ISI.type == "Gamma"){
-      g <- hyper
-      # out <- (g * x * (g*X)**(g-1) * exp(-g*X) )/(gamma(g))
-      out <- g*log(g) + log(x) +(g-1)*log(X)  -g*X - lgamma(g)
-    }
-    if(ISI.type == "InverseGaussian"){
-      l <- hyper
-      # out <- x*sqrt(l/(2*pi*X**3)) * exp((-l* (X-1)**2)/(2*X))
-      out <- log(x)+ 0.5*log(l) - 0.5*log(2*pi) - 1.5*log(X) - l* ((X-1)**2)/(2*X)
-    }
-    if(ISI.type == "LogNormal"){
-      mu <- hyper
-      out <- (x/(2*X*sqrt(mu*pi)))*exp(-((log(X) + mu)**2)/(4*mu))
-      out <- log(x) - 0.5*log(2*pi) - 0.5*log(mu) - log(X) -((log(X) + mu)**2)/(4*mu)
-    }
-    if(ISI.type == "Weibull"){
-      k <- hyper
-      l <- 1/(gamma(1+1/k))
-      # out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
-      out <- log(x)+log(k) + (k-1)*log(X) - k*log(l) - (X/l)**k
-    }
-    if(ISI.type == "Gamma2"){
-      a <- hyper[1] ; b <- hyper[2]
-      # out <- (b * x * (b*X)**(a-1) * exp(-b*X) )/(gamma(a))
-      out <- log(x) +a*log(b) +(a-1)*log(X) - b*X - lgamma(a)
-    }
-    if(ISI.type == "InverseGaussianOLD"){
-      a <- hyper
-      # out <- (x/(sqrt(2*pi*(X**3) ))) * exp(-( (X-a)**2)/(2*X*(a**2)))
-      out <- log(x) - 0.5*log(2*pi) - 1.5*log(X) - (((X-mu)**2)/(2*mu**2*X))
-    }
-    if(ISI.type == "InverseGaussian2"){
-      mu <- hyper[1] ; l <- hyper[2]
-      # out <- (x*sqrt(l)/(sqrt(2*pi*(X**3) ))) * exp(-( l*(X-mu)**2)/(2*X*(mu**2)))
-      out <- log(x) + 0.5*log(l) - 0.5*log(2*pi) - 1.5*log(X) - ((l*(X-mu)**2)/(2*mu**2*X))
-    }
-    if(ISI.type == "LogNormal2"){
-      mu <- hyper[1] ; sigma <- hyper[2]
-      # out <- (x/(sigma*X*sqrt(2*pi)))*exp(-((log(X) - mu)**2)/(2*sigma**2))
-      out <- log(x) - log(X) - log(sigma) - 0.5*log(2*pi) - ((log(X)-mu)**2)/(2*sigma**2)
-    }
-    if(ISI.type == "Weibull2"){
-      k <- hyper[1]; l <- hyper[2]
-      # out <-   k*x/l * (X/l)**(k-1) * exp(- (X/l)**k)
-      out <-   log(x) + log(k) + (k-1)*log(X) - k*log(l) - (X/l)**k
-    }
-  }
-
-  return(out)
-}
-
-
 #' Simulate a single spike sequence
 #'
 #' @param end.time The length of time we want to simulate spikes
@@ -143,9 +10,7 @@ PDF <- function(t, last.spike, hyper, end.time, x, X, ISI.type,do.log = F){
 #' @param do.log Flag for whether we do the calculations on the log scale
 #'
 #' @return List where $spikes contains the spike sequence and $err gives the max error
-#' @export
 #'
-#' @examples
 Spikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.type = "Gamma",do.log = T){
   # Do some checks initially.
   {
@@ -234,26 +99,20 @@ Spikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.type 
 }
 
 
-#' Simulate multiple spike sequences
+#' Simulate spike sequences
 #'
-#' @param end.time The length of time we want to simulate spikes
-#' @param int.fn The intensity function
-#' @param hyper The values of the ISI parameter
-#' @param steps The number of steps to discretise time into
-#' @param T.min The refractory period
-#' @param ISI.type The ISI distribution
-#' @param multi The number of spike sequences to generate
+#' @inheritParams Spikes
+#' @param sequences The number of spike sequences to generate
 #' @param add.end  Do we include the end time on the end of the spikes
-#' @param do.log Do we do the calculations on the log scale
 #'
 #' @return Matrix containing multiple spikes sequences
 #' @export
 #'
 #' @examples
-MultiSpikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.type = "Gamma", multi = 10, add.end = TRUE,do.log = T){
+simulate_spikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.type = "Gamma", sequences = 1, add.end = TRUE,do.log = T){
   if(add.end == TRUE){
     # Iterate over the number of sequences required.
-    for(i in 1:multi){
+    for(i in 1:sequences){
       # Save first spike sequence in data.frame
       if(i == 1){
         V1 <- c(Spikes(end.time, int.fn, hyper, steps, T.min, ISI.type, do.log)$spikes, end.time)
@@ -278,7 +137,7 @@ MultiSpikes <- function(end.time, int.fn, hyper, steps =1000, T.min = NULL, ISI.
   }
   else{
     # Iterate over the number of sequences required.
-    for(i in 1:multi){
+    for(i in 1:sequences){
       # Save first spike sequence in data.frame
       if(i == 1){
         V1 <- Spikes(end.time, int.fn, hyper, steps, T.min, ISI.type,do.log)$spikes

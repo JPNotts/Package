@@ -18,7 +18,7 @@ log_pi_x(
 )
 }
 \arguments{
-\item{d.spikes}{Data frame containing spike sequences.}
+\item{d.spikes}{Data frame containing spike sequences}
 
 \item{hyper.param}{Value of the ISI parameter.}
 
@@ -32,7 +32,7 @@ log_pi_x(
 
 \item{T.min}{Refractory period, default set to NULL.}
 
-\item{max.T.min}{Maximal allowed T.min values from d.spikes.}
+\item{max.T.min}{If T.min != NULL, the maximum allowable refractory period.}
 
 \item{ISI.type}{The ISI distribution.}
 

@@ -15,7 +15,7 @@ check_feasible(
 )
 }
 \arguments{
-\item{d.spikes}{Data frame containing the spikes.}
+\item{d.spikes}{Data frame containing spike sequences}
 
 \item{partition}{Partition of time experiment time. A vector of K values where the first entry is 0 and the last is the end of experiment time.}
 
@@ -23,7 +23,7 @@ check_feasible(
 
 \item{x}{The intensity function}
 
-\item{end.time}{The experiment end time}
+\item{end.time}{End of experiment time}
 
 \item{T.min}{Refractory period, default set to NULL.}
 

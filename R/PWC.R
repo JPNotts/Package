@@ -6,7 +6,6 @@
 #' @param sum.of.prob sum^k.max_i=0 Poi(k | lambda).
 #'
 #' @return probability of k
-#' @export
 #'
 conditioned_poisson<- function(k, lambda, k.max, sum.of.prob){
   if(k > k.max){
@@ -23,7 +22,7 @@ conditioned_poisson<- function(k, lambda, k.max, sum.of.prob){
 #'
 #' @param partition Partition of time experiment time. A vector of K values where the first entry is 0 and the last is the end of experiment time.
 #' @param heights Vector of (K-1) heights corresponding to the partition.
-#' @param spikes Data frame containing spike sequences.
+#' @param d.spikes Data frame containing spike sequences.
 #' @param hyper.param ISI parameter.
 #' @param T.min Refractory period.
 #' @param ISI.type The ISI distribution.
@@ -31,11 +30,10 @@ conditioned_poisson<- function(k, lambda, k.max, sum.of.prob){
 #' @param max.T.min Maximal allowed T.min values from d.spikes.
 #'
 #' @return new partition and heights
-#' @export
-move_change_point <- function(partition, heights, spikes, hyper.param, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log){
+move_change_point <- function(partition, heights, d.spikes, hyper.param, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log){
   if(length(partition) > 2){
     #  calculate the likelihood of original intensity function.
-    likeli.cur <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+    likeli.cur <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
     # Generate new intensity function, and calculate it's liklihood.
     M <- length(partition)
@@ -49,7 +47,7 @@ move_change_point <- function(partition, heights, spikes, hyper.param, T.min = N
     new.position <- stats::runif(1,min = partition[selected.pos-1], max = partition[selected.pos+1])
     partition.can <- partition
     partition.can[selected.pos] <- new.position
-    likeli.can <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition.can, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+    likeli.can <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition.can, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
     # Calculate the probability that he new intensity function is accepted.
     if(do.log == FALSE){
@@ -78,26 +76,17 @@ move_change_point <- function(partition, heights, spikes, hyper.param, T.min = N
 }
 
 #' RJMCMC: Change height.
-#'
-#' @param partition  Partition of time experiment time. A vector of K values where the first entry is 0 and the last is the end of experiment time.
-#' @param heights Vector of (K-1) heights corresponding to the partition.
-#' @param spikes Data frame containing spike sequences.
-#' @param hyper.param ISI parameter.
+#' @inheritParams move_change_point
 #' @param kappa parameter of priors height
 #' @param mu parameter of priors height
 #' @param kappa0 parameter of priors height
-#' @param T.min Refractory period.
-#' @param ISI.type The ISI distribution.
-#' @param do.log Flag, where if do.log is true the calculations are computed on the log scale.
 #' @param which.heights Method for prior distribution of heights, either 'independent' or 'martingale'.
-#' @param max.T.min Maximal allowed T.min values from d.spikes.
 #'
 #' @return New partition and heights
-#' @export
 #'
-change_height <- function(partition, heights, spikes, hyper.param, kappa, mu, kappa0, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log, which.heights = "independent"){
+change_height <- function(partition, heights, d.spikes, hyper.param, kappa, mu, kappa0, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log, which.heights = "independent"){
   #  Calculate the likelihood of original intensity function.
-  likeli.cur <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+  likeli.cur <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
   # Next generate new height and calculate it's likelihood.
   N <- length(heights)
@@ -106,7 +95,7 @@ change_height <- function(partition, heights, spikes, hyper.param, kappa, mu, ka
   height.new <- heights[selected.pos] * exp(v)
   heights.can <- heights
   heights.can[selected.pos] <- height.new
-  likeli.can <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition, heights = heights.can, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+  likeli.can <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition, heights = heights.can, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
   # Calculate the probability that he new intensity function is accepted.
   if(do.log == FALSE){
@@ -183,29 +172,15 @@ change_height <- function(partition, heights, spikes, hyper.param, kappa, mu, ka
 
 #' RJMCMC: Birth of a change point.
 #'
-#' @param partition Partition of time experiment time. A vector of K values where the first entry is 0 and the last is the end of experiment time.
-#' @param heights Vector of (K-1) heights corresponding to the partition.
-#' @param spikes Data frame containing spike sequences.
-#' @param hyper.param ISI parameter.
+#' @inheritParams change_height
+#' @inheritParams conditioned_poisson
 #' @param cvalue parameter c in the RJMCMC, to choose which event to perform in MCMC iteration.
-#' @param kappa parameter of priors height
-#' @param mu parameter of priors height
-#' @param kappa0 parameter of priors height
-#' @param k.max Maximum number of change points in RJMCMC.
-#' @param sum.of.prob sum^k.max_i=0 Poi(k | lambda).
-#' @param lambda Parameter of the Poisson distribution.
-#' @param T.min Refractory period.
-#' @param ISI.type The ISI distribution.
-#' @param do.log Flag, where if do.log is true the calculations are computed on the log scale.
-#' @param which.heights Method for prior distribution of heights, either 'independent' or 'martingale'.
-#' @param max.T.min Maximal allowed T.min values from d.spikes.
 #'
 #' @return new partition and heights
-#' @export
-birth <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, kappa0, k.max, sum.of.prob, lambda, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log, which.heights = "independent"){
+birth <- function(partition, heights, d.spikes, hyper.param, cvalue, kappa, mu, kappa0, k.max, sum.of.prob, lambda, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log, which.heights = "independent"){
   #  Calculate the likelihood of original intensity function.
 
-  likeli.cur <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+  likeli.cur <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
   # Next we generate the new intensity function parameters.
   new.point <- stats::runif(1,min = partition[1], max = partition[length(partition)])
@@ -236,7 +211,7 @@ birth <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
   # Do we do calculations on log scale?
   if(do.log == F){
     # Calculate the likelihood of new intensity function.
-    likeli.can <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+    likeli.can <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
     # Next calculate the jacobian.
     jacob <- ((new.height1 + new.height2)**2 )/heights[pos.new.point-1]
@@ -309,7 +284,7 @@ birth <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
   else{
     # Calculations done on log scale.
     # Calculate the likelihood of new intensity function.
-    likeli.can <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+    likeli.can <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
     # Next calculate the jacobian.
     jacob <- ((new.height1 + new.height2)**2 )/heights[pos.new.point-1]
@@ -386,34 +361,18 @@ birth <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
 
 #' RJMCMC: Death of a change point
 #'
-#' @param partition Partition of time experiment time. A vector of K values where the first entry is 0 and the last is the end of experiment time.
-#' @param heights Vector of (K-1) heights corresponding to the partition.
-#' @param spikes Data frame containing spike sequences.
-#' @param hyper.param ISI parameter.
-#' @param cvalue parameter c in the RJMCMC, to choose which event to perform in MCMC iteration.
-#' @param kappa parameter of priors height
-#' @param mu parameter of priors height
-#' @param kappa0 parameter of priors height
-#' @param k.max Maximum number of change points in RJMCMC.
-#' @param sum.of.prob sum^k.max_i=0 Poi(k | lambda).
-#' @param lambda Parameter of the Poisson distribution.
-#' @param T.min Refractory period.
-#' @param ISI.type The ISI distribution.
-#' @param do.log Flag, where if do.log is true the calculations are computed on the log scale.
-#' @param which.heights Method for prior distribution of heights, either 'independent' or 'martingale'.
-#' @param max.T.min Maximal allowed T.min values from d.spikes.
+#' @inheritParams birth
 #'
 #' @return new partition and heights
-#' @export
 #'
 #' @examples
-death <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, kappa0, k.max, sum.of.prob, lambda, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log, which.heights = "independent"){
+death <- function(partition, heights, d.spikes, hyper.param, cvalue, kappa, mu, kappa0, k.max, sum.of.prob, lambda, T.min = NULL, max.T.min = NA, ISI.type = "Gamma", do.log, which.heights = "independent"){
   N <- length(partition)
 
   # If to make sure there exists a point to delete.
   if (N >2){
     #  Calculate the likelihood of original intensity function.
-    likeli.cur <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+    likeli.cur <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition, heights = heights, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
     # Next we generate the new intensity function parameters.
     if (N == 3){pos.to.die <- 2}
@@ -442,7 +401,7 @@ death <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
     #Do we calculate on the log scale.
     if(do.log== F){
       # Calculate the likelihood of new intensity function.
-      likeli.can <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+      likeli.can <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
       #  --------------------------------------------------
       # Next calculate the jacobian.
@@ -514,7 +473,7 @@ death <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
     }
     else{
       # Calculate the likelihood of new intensity function.
-      likeli.can <- log_pi_x(d.spikes = spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
+      likeli.can <- log_pi_x(d.spikes = d.spikes, hyper.param = hyper.param, partition = partition.new, heights = heights.new, T.min = T.min, max.T.min = max.T.min,  ISI.type = ISI.type, do.log = do.log)
 
       #  --------------------------------------------------
       # Next calculate the jacobian.
@@ -591,7 +550,7 @@ death <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
 
 
 #' RJMCMC: MCMC.
-#' @param spikes Data frame containing spike sequences.
+#' @param d.spikes Data frame containing spike sequences.
 #' @param end.time End time of the experiment
 #' @param iter Number of iterations to record
 #' @param burn Number of iterations to burn before recording.
@@ -615,14 +574,14 @@ death <- function(partition, heights, spikes, hyper.param, cvalue, kappa, mu, ka
 #' @return Iterations of the MCMC algorithm.
 #' @export
 #'
-mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0,
+mcmc_pwc <- function(d.spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0,
                  hyper.param = c(1,0.001), sigma.h = NULL, start.hyper = 1000, hyper.initial = 0.1,
                  T.min.param = NULL, T.min.initial = 0.05, sigma.t = NULL, ISI.type = "Gamma",
                  do.log = TRUE, show.iter = FALSE, which.heights = "independent"){
 
   # Print inputs if to check.
   # print("HI we in mcmc")
-  #  print(spikes)
+  #  print(d.spikes)
   # print(end.time)
   # print(iter)
   # print(burn)
@@ -630,7 +589,6 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
   # print(lambda)
   # print(kappa)
   # print(mu)
-
 
   # Check gammma.param has length 1 or 2.
   if(length(hyper.param)>2){stop("Error! The length of hyper.param != 1 or 2.\n The hyper.param you entered has length ",
@@ -642,6 +600,7 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
   # Create output array to store the iterations, for x(t), and vectors for hyper and T.min if required.
   out.part <- matrix(NA, nrow = iter, ncol = k.max+2)
   out.heights <- matrix(NA,nrow = iter, ncol = k.max+1)
+  out.likeli <- rep(NA,iter)
   if(length(hyper.param)==2){
     out.hyper <- rep(NA,iter)
     if(is.null(sigma.h) == TRUE){stop("Error! If you want to use mcmc to get ISI parameter estimation you require a sigma.h value.")}
@@ -652,8 +611,8 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
 
     # Define T.max so that we don't put forward a value larger then possible.
     max.T.min <- 100000
-    for(i in 1:ncol(spikes)){
-      s <- spikes[,i]
+    for(i in 1:ncol(d.spikes)){
+      s <- d.spikes[,i]
       s <- s[!is.na(s)]
       new.T.max <- min(s[-1] - s[-length(s)])
       max.T.min <- min(max.T.min,new.T.max)
@@ -673,17 +632,17 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
 
   # setup the initial step function and gamma values.
   partition <- c(0,end.time)
-  heights <- length(spikes)/end.time
+  heights <- length(d.spikes)/end.time
   if (length(hyper.param)==2){hyper.cur <- hyper.initial}
   else {hyper.cur <- hyper.param}
   if (length(T.min.param)==2){T.min.cur <- T.min.initial}
   else {T.min.cur <- T.min.param}
 
   # mcmc loop starts here
-  li<- seq(100,150000,100)
+  pb <- utils::txtProgressBar(min = 1, max = iter+burn, style = 3)
   for (i in 2:(iter+burn)) {
     # Print the loop.
-    if (i %in% li && show.iter == TRUE){ cat(i,"\n")}
+    # if (i %in% li && show.iter == TRUE){ cat(i,"\n")}
 
     #############################
     # UPDATE INTENSITY FUNCTION
@@ -696,18 +655,18 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
 
 
     if (u < b.k){
-      next.val <- birth(partition, heights, spikes, hyper.cur, cvalue, kappa, mu, kappa0, k.max, sum.of.prob, lambda, T.min.cur,max.T.min, ISI.type, do.log, which.heights)
+      next.val <- birth(partition=partition, heights=heights, d.spikes=d.spikes, hyper.param=hyper.cur, cvalue=cvalue, kappa=kappa, mu=mu, kappa0=kappa0, k.max=k.max, sum.of.prob=sum.of.prob, lambda=lambda, T.min=T.min.cur,max.T.min=max.T.min, ISI.type=ISI.type, do.log=do.log, which.heights=which.heights)
       partition <- next.val$partition
       heights <- next.val$heights
     }
     else if (b.k < u  && u < b.k + d.k){
-      next.val <- death(partition, heights, spikes, hyper.cur, cvalue, kappa, mu, kappa0, k.max, sum.of.prob, lambda, T.min.cur,max.T.min, ISI.type, do.log, which.heights)
+      next.val <- death(partition=partition, heights=heights, d.spikes=d.spikes, hyper.param=hyper.cur, cvalue =cvalue, kappa=kappa, mu=mu, kappa0=kappa0, k.max=k.max, sum.of.prob=sum.of.prob, lambda=lambda, T.min=T.min.cur, max.T.min=max.T.min, ISI.type=ISI.type, do.log=do.log, which.heights=which.heights)
       partition <- next.val$partition
       heights <- next.val$heights
     }
     else if (b.k + d.k < u && u < 1){
-      partition <- move_change_point(partition, heights, spikes, hyper.cur, T.min.cur, ISI.type, do.log)
-      heights <- change_height(partition, heights, spikes, hyper.cur, kappa, kappa0, mu, T.min.cur, max.T.min, ISI.type, do.log, which.heights)
+      partition <- move_change_point(partition=partition, heights=heights, d.spikes=d.spikes, hyper.param=hyper.cur, T.min=T.min.cur, max.T.min = max.T.min, ISI.type=ISI.type, do.log=do.log)
+      heights <- change_height(partition=partition, heights=heights, d.spikes=d.spikes, hyper.param=hyper.cur, kappa=kappa, kappa0=kappa0, mu=mu, T.min=T.min.cur, max.T.min=max.T.min, ISI.type=ISI.type, do.log=do.log, which.heights=which.heights)
     }
     else{ stop("Error A1! Something gone wrong!")}
 
@@ -716,7 +675,7 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
     # UPDATE HYPER PARAMETERS
     #############################
     # if(i==100){
-    #   ratio <- length(spikes)/end.time
+    #   ratio <- length(d.spikes)/end.time
     #   print(ratio)
     # }
     if(length(hyper.param)==2 && i > start.hyper){
@@ -726,13 +685,13 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
       if (hyper.can > 0) {
         # print(hyper.cur)
         # print( partition)
-        # print(spikes)
+        # print(d.spikes)
         # print( hyper.param)
         # print(T.min.cur)
         # print(ISI.type)
         # print(heights)
-        log.pi.cur <- log_pi_hyper_param(d.spikes = spikes, hyper.param = hyper.cur, partition = partition, heights = heights,  prior.hyper.param = hyper.param, T.min = T.min.cur, max.T.min = max.T.min, ISI.type = ISI.type)
-        log.pi.can <- log_pi_hyper_param(d.spikes = spikes, hyper.param = hyper.can, partition = partition, heights = heights,  prior.hyper.param = hyper.param, T.min = T.min.cur, max.T.min = max.T.min, ISI.type = ISI.type)
+        log.pi.cur <- log_pi_hyper_param(d.spikes = d.spikes, hyper.param = hyper.cur, partition = partition, heights = heights,  prior.hyper.param = hyper.param, T.min = T.min.cur, max.T.min = max.T.min, ISI.type = ISI.type)
+        log.pi.can <- log_pi_hyper_param(d.spikes = d.spikes, hyper.param = hyper.can, partition = partition, heights = heights,  prior.hyper.param = hyper.param, T.min = T.min.cur, max.T.min = max.T.min, ISI.type = ISI.type)
         # M-H ratio
         # cat("cur = ", log.pi.cur,"\n")
         # cat("can = ", log.pi.can,"\n")
@@ -756,8 +715,8 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
 
 
 
-        log.pi.cur <- log_pi_Tmin(d.spikes = spikes, T.min = T.min.cur, max.T.min = max.T.min, hyper = hyper.cur, partition = partition, heights = heights, prior.T.min = T.min.param, ISI.type =ISI.type)
-        log.pi.can <- log_pi_Tmin(d.spikes = spikes, T.min = T.min.can, max.T.min = max.T.min, hyper = hyper.cur, partition = partition, heights = heights, prior.T.min = T.min.param, ISI.type =ISI.type)
+        log.pi.cur <- log_pi_Tmin(d.spikes = d.spikes, T.min = T.min.cur, max.T.min = max.T.min, hyper = hyper.cur, partition = partition, heights = heights, prior.T.min = T.min.param, ISI.type =ISI.type)
+        log.pi.can <- log_pi_Tmin(d.spikes = d.spikes, T.min = T.min.can, max.T.min = max.T.min, hyper = hyper.cur, partition = partition, heights = heights, prior.T.min = T.min.param, ISI.type =ISI.type)
         # M-H ratio
 
         # draw from a U(0,1)
@@ -780,7 +739,9 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
       out.heights[j,1:length(heights)] <- heights
       if(length(hyper.param)==2){ out.hyper[j] <- hyper.cur}
       if(length(T.min.param)==2){ out.T.min[j] <- T.min.cur}
+      out.likeli[j] <- log_pi_x(d.spikes, hyper.cur, partition = partition, heights= heights, T.min = T.min.cur, max.T.min = max.T.min, ISI.type = ISI.type, do.log = TRUE)
     }
+    utils::setTxtProgressBar(pb, i) # update text progress bar after each iter
 
   }
   hyp <- NULL ; t <- NULL
@@ -794,3 +755,177 @@ mcmc_pwc <- function(spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kappa0
   return(output)
 }
 
+#' get the mean and 95% conf interval for PWC method
+#'
+#' @param partitions  za
+#' @param heights za
+#' @param x za
+#' @param debug za
+#' @param return.val za
+#' @param method za
+#' @param steps za
+#' @param incProg za
+#'
+#' @return A list
+#' @export
+#'
+#' @examples
+conf_interval_pwc <- function(partitions, heights, x, debug = FALSE, return.val = FALSE, method = "TRUE", steps = 1000, incProg = FALSE){
+
+  # First if all iterations are constant functions
+  if(dim(partitions)[2] == 2){
+    quant <- quantile(heights,probs <- c(0.025,0.975))
+    return(list(mean = mean(heights), lower = quant[1], upper = quant[2], partition = partitions[1,]))
+  }
+
+  # Next we consider the case where we want the exact answer (can take a while to run)
+  if(method == "TRUE"){
+    iter <- dim(partitions)[1]
+    ex <- partitions[1,]
+    ex <- ex[!is.na(ex)]
+    end.time <- ex[length(ex)]
+    # Create a vector of all the step postitions.
+    all.step <- sort(unique(partitions[!is.na(partitions)] ))
+
+    # Create a vector to store the mean and matrix to store the confidence interval values.
+    mean.vect <- rep(NULL, length(all.step)-1)
+    conf.inter <- matrix(NA,nrow =2, ncol = length(all.step)-1)
+
+    # Compute mean and confidence interval values for the first step.
+    heights.in.step <- heights[,1]
+    quant <- quantile(heights.in.step,probs <- c(0.025,0.975))
+    mean.vect[1] <- mean(heights.in.step)
+    conf.inter[1,1] <- quant[1]
+    conf.inter[2,1] <- quant[2]
+
+    # Compute mean and confidence interval values for all other steps.
+    for (i in 2:(length(all.step)-1)){
+      heights.in.step <- NULL
+      for(j in 1:iter){
+        position <-  max(which(partitions[j,]< (all.step[i] +1e-10)))
+        heights.in.step <- c(heights.in.step,heights[j,position])
+      }
+      quant <- quantile(heights.in.step,probs <- c(0.025,0.975))
+      mean.vect[i] <- mean(heights.in.step)
+      conf.inter[1,i] <- quant[1]
+      conf.inter[2,i] <- quant[2]
+    }
+
+    if(return.val == TRUE){
+      return(list(mean = mean.vect, lower = conf.inter[1,], upper = conf.inter[2,], partition = all.step))
+    }
+    else{
+      # Create the plot.
+      plot(0,0,ylim=c(0,(max(heights[!is.na(heights)])+0.1)), xlim = c(0,end.time), type="n", ylab = "intensity", xlab="time")
+
+      # plot the mean value. (step function separate)
+      # for( j in 1:length(mean.vect)){
+      #   height <- mean.vect[j]
+      #   corresp.points <- c(all.step[j],all.step[j+1])
+      #   lines(corresp.points,c(height,height), col="red", lwd=2)
+      # }
+
+      # Plot mean value (step function joined)
+      height.grid <- NULL
+      corresp.points <- NULL
+      for( j in 1:length(mean.vect)){
+        height <- mean.vect[j]
+        corresp.points <- c(corresp.points, all.step[j],all.step[j+1])
+        height.grid <- c(height.grid, height,height)
+
+      }
+      lines(corresp.points,height.grid, col="black", lwd=2)
+
+      # Plot the confidence interval.
+      lv.grid <- NULL
+      uv.grid <- NULL
+      corresp.points <- NULL
+      for( j in 1:length(mean.vect)){
+        lv <- conf.inter[1,j]
+        uv <- conf.inter[2,j]
+        corresp.points <- c(corresp.points, all.step[j],all.step[j+1])
+        lv.grid <- c(lv.grid, lv,lv)
+        uv.grid <- c(uv.grid, uv,uv)
+      }
+      polygon(c(corresp.points,rev(corresp.points)), c(uv.grid, rev(lv.grid)),col = rgb(85,75,85,max=255,alpha=100),border=NA)
+
+      # Plot the truth (if we know it)
+      if (!is.null(x)){
+        grid <- seq(0,end.time,end.time/(length(x)-1))
+        lines(grid,x,col="red", lwd=3)
+      }
+
+    }
+
+    if (debug == TRUE){
+      cat("partitions = \n")
+      print(partitions)
+      cat("all.step = \n")
+      print(all.step)
+      cat("\n")
+      cat("heights = \n")
+      print(heights)
+      cat("mean.vect = \n")
+      print(mean.vect)
+      cat("conf.inter = \n")
+      print(conf.inter)
+    }
+  }
+
+  # Then consider a quicker version which calculates an approximate answer.
+  if(method == "Approx"){
+    iter <- dim(partitions)[1]
+    ex <- partitions[1,]
+    ex <- ex[!is.na(ex)]
+    end.time <- ex[length(ex)]
+    t <- seq(0,end.time,end.time/steps)
+
+    # Create a store for each of the outputs
+    mean <- rep(NA,steps+1)
+    lower <- rep(NA,steps+1)
+    upper <- rep(NA,steps+1)
+    # Loop over all the time points where we want to know the intensity
+    store <- rep(NA,iter)
+    current <- rep(1,iter)
+    for(i in 1:(length(t)-1)){
+
+
+      for(j in 1:iter){
+        end <- sum(!is.na(partitions[j,]))
+        current[j] <-  max(which(partitions[j,1:end]< (t[i] +1e-10) ))
+        store[j] <- heights[j,current[j]]
+      }
+      mean[i] <- mean(store)
+      quant <- quantile(store,probs <- c(0.025,0.975))
+      lower[i] <- quant[1] ; upper[i] <- quant[2]
+    }
+    mean[steps+1] <- mean(store); lower[steps+1] <- quant[1] ; upper[steps+1] <- quant[2]
+
+    if(return.val){
+      return(list(mean = mean, lower = lower, upper = upper))
+    }
+    else{
+      part <- partitions[1,]
+      part <- part[!is.na(part)]
+      end.time <- part[length(part)]
+
+      mar.default <- c(5,4,4,2) + 0.1
+      par(mar = mar.default + c(0, 1, 0, 0))
+      plot(0,0, type ="n", xlim = c(0,end.time),
+           ylim = c(min(lower) , max(upper)),
+           xlab ="Time ($s$)", ylab = 'Intensity (spikes/s)', cex.lab = 1.5, cex.axis =1.2)
+
+      t <- seq(0,end.time,end.time/1000)
+      polygon(c(t,rev(t)), c(upper, rev(lower)),col = rgb(0,0,255,max=255,alpha=80),border=NA)
+      lines(t,mean, col= "blue", lwd = 2)
+
+      if(!is.null(x)){
+        t<- seq(0,end.time,end.time/(length(x)-1))
+        lines(t,x,col = 1, lwd = 2)
+      }
+    }
+
+
+  }
+
+}

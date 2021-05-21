@@ -7,7 +7,7 @@
 birth(
   partition,
   heights,
-  spikes,
+  d.spikes,
   hyper.param,
   cvalue,
   kappa,
@@ -28,7 +28,7 @@ birth(
 
 \item{heights}{Vector of (K-1) heights corresponding to the partition.}
 
-\item{spikes}{Data frame containing spike sequences.}
+\item{d.spikes}{Data frame containing spike sequences.}
 
 \item{hyper.param}{ISI parameter.}
 

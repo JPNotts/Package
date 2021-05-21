@@ -7,7 +7,7 @@
 move_change_point(
   partition,
   heights,
-  spikes,
+  d.spikes,
   hyper.param,
   T.min = NULL,
   max.T.min = NA,
@@ -20,7 +20,7 @@ move_change_point(
 
 \item{heights}{Vector of (K-1) heights corresponding to the partition.}
 
-\item{spikes}{Data frame containing spike sequences.}
+\item{d.spikes}{Data frame containing spike sequences.}
 
 \item{hyper.param}{ISI parameter.}
 

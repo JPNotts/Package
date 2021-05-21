@@ -2,13 +2,13 @@
 % Please edit documentation in R/Shared.R
 \name{log_pi_Tmin}
 \alias{log_pi_Tmin}
-\title{Likelihood of the refratory period}
+\title{Likelihood of the refractory period}
 \usage{
 log_pi_Tmin(
   d.spikes,
   T.min,
   max.T.min,
-  hyper,
+  hyper.param,
   partition = NA,
   heights = NA,
   x = NA,
@@ -18,19 +18,19 @@ log_pi_Tmin(
 )
 }
 \arguments{
-\item{d.spikes}{Data frame containing spike sequences.}
+\item{d.spikes}{Data frame containing spike sequences}
 
-\item{T.min}{Refractory period.}
+\item{T.min}{Refractory period, default set to NULL.}
 
-\item{max.T.min}{Maximal allowed T.min values from d.spikes.}
+\item{max.T.min}{If T.min != NULL, the maximum allowable refractory period.}
 
-\item{hyper}{ISI parameter.}
+\item{hyper.param}{Value of the ISI parameter.}
 
 \item{partition}{Partition of time experiment time. A vector of K values where the first entry is 0 and the last is the end of experiment time.}
 
 \item{heights}{Vector of (K-1) heights corresponding to the partition.}
 
-\item{x}{Intensity function}
+\item{x}{The intensity function}
 
 \item{end.time}{End of experiment time}
 
@@ -42,5 +42,5 @@ log_pi_Tmin(
 marginal of the refractory period
 }
 \description{
-Likelihood of the refratory period
+Likelihood of the refractory period
 }

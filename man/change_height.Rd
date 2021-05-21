@@ -7,7 +7,7 @@
 change_height(
   partition,
   heights,
-  spikes,
+  d.spikes,
   hyper.param,
   kappa,
   mu,
@@ -24,7 +24,7 @@ change_height(
 
 \item{heights}{Vector of (K-1) heights corresponding to the partition.}
 
-\item{spikes}{Data frame containing spike sequences.}
+\item{d.spikes}{Data frame containing spike sequences.}
 
 \item{hyper.param}{ISI parameter.}
 

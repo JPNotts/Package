@@ -5,7 +5,7 @@
 \title{RJMCMC: MCMC.}
 \usage{
 mcmc_pwc(
-  spikes,
+  d.spikes,
   end.time,
   iter,
   burn,
@@ -28,7 +28,7 @@ mcmc_pwc(
 )
 }
 \arguments{
-\item{spikes}{Data frame containing spike sequences.}
+\item{d.spikes}{Data frame containing spike sequences.}
 
 \item{end.time}{End time of the experiment}
 
