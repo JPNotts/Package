@@ -1009,6 +1009,7 @@ log_pi_hyper_param <- function(d.spikes, hyper.param, partition=NA, heights=NA, 
         N <- length(X) - 1
 
         out <- out + sum( base::log(k/l) +(k-1)*base::log(X[2:N]/l) - (X[2:N]/l)**k)
+        # out <- out + (N-1)*(k*lgamma(1+1/k) +log(k)) +sum( (k-1)*log(X[2:N]) - (gamma(1+1/k)*X[2:N])**k)
       }
 
 

@@ -100,7 +100,7 @@ return(list(all =out, issues_seq = error.seq))
 #' @export
 #'
 #' @examples
-get_QQ_KS_singleISI <- function(filepath,model,ISI.type, min.spikes=0, ignore = NA,rescale=T){
+get_QQ_KS_singleISI <- function(filepath,model,ISI.type, min.spikes=0, ignore = NA,rescale=T, opthyp = T){
   # load in the results
   load(filepath)
 
@@ -140,18 +140,44 @@ get_QQ_KS_singleISI <- function(filepath,model,ISI.type, min.spikes=0, ignore = 
     int.fns <- store
 
   }
-  if(ISI.type != 'Exponential'){
-    hyp <- data$ISI_param[required.cells,8]
-  }
+
   spikes.seq <- spikes[,required.cells]
   end.time <- colMax(spikes.seq)
 
   if(rescale==T){
     scale <- 20/end.time
-    int.fns <- int.fns*scale
+    int.fns <- int.fns/scale
     spikes.seq <- spikes.seq*scale
-    end.time=20
+    end.time=rep(20,length(end.time))
   }
+
+  if(ISI.type != 'Exponential'){
+    hyp <- data$ISI_param[required.cells,8]
+    if(opthyp){
+      # function to optimise
+      likelihyp <- function(hyper, parameters ){
+        spikes <- parameters[[1]] ; int.fn <- parameters[[2]] ; end.time <- parameters[[3]] ; ISI.type <- parameters[[4]]
+
+        return(-log_pi_hyper_param(d.spikes = data.frame(spikes), hyper.param=hyper, x=int.fn, end.time = end.time,
+                                   prior.hyper.param = c(1,0.01), T.min = NULL, max.T.min = NA, ISI.type = ISI.type))
+      }
+
+      ISI.orig <- c('Gamma', 'LN', 'Weibull', 'NewIG')
+      ISI.new <- c("Gamma", 'LogNormal', 'Weibull', 'InverseGaussian')
+      ISI <- ISI.orig[which(ISI.type == ISI.new)]
+
+      hyp <- rep(NA,ncol(spikes.seq))
+      for(kk in 1:ncol(spikes.seq)){
+        s <- spikes.seq[,kk][!is.na(spikes.seq[,kk])] ; int.fn <- int.fns[kk,] ; end.time.cur <- max(s,na.rm=T)
+        parameters <- list(s,int.fn,end.time.cur,ISI)
+
+        hyp[kk] <- optim(par=1, fn =likelihyp, method='Brent', parameters = parameters, lower = 0, upper = 500)$par
+      }
+      print(hyp)
+    }
+  }
+
+
   ans <- QQ_KS_data(spikes.seq, int.fns, end.time, ISI.type = ISI.type, hyper.param = hyp,t.min = 0, rm.last.spike = TRUE, do.log = TRUE)
 
 
@@ -168,14 +194,14 @@ get_QQ_KS_singleISI <- function(filepath,model,ISI.type, min.spikes=0, ignore = 
 #' @export
 #'
 #' @examples
-get_QQ_KS <- function(filepath, model,return_val = T, min.spikes = 0,ignore = NA,rescale=F){
+get_QQ_KS <- function(filepath, model,return_val = T, min.spikes = 0,ignore = NA,rescale=F, opthyp = F){
 
   # Get the data for each ISI type.
-  gamma.data <- get_QQ_KS_singleISI(filepath,model,"Gamma", min.spikes = min.spikes, ignore=ignore,rescale = rescale)
-  poisson.data <- get_QQ_KS_singleISI(filepath,model,"Exponential", min.spikes = min.spikes, ignore=ignore,rescale = rescale)
-  invG.data <- get_QQ_KS_singleISI(filepath,model,"InverseGaussian", min.spikes = min.spikes, ignore=ignore,rescale = rescale)
-  weibull.data <- get_QQ_KS_singleISI(filepath,model,"Weibull", min.spikes = min.spikes, ignore=ignore,rescale = rescale)
-  LN.data <- get_QQ_KS_singleISI(filepath,model,"LogNormal", min.spikes = min.spikes, ignore=ignore,rescale = rescale)
+  gamma.data <- get_QQ_KS_singleISI(filepath,model,"Gamma", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
+  poisson.data <- get_QQ_KS_singleISI(filepath,model,"Exponential", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
+  invG.data <- get_QQ_KS_singleISI(filepath,model,"InverseGaussian", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
+  weibull.data <- get_QQ_KS_singleISI(filepath,model,"Weibull", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
+  LN.data <- get_QQ_KS_singleISI(filepath,model,"LogNormal", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
 
   # get the spikes
   load(filepath)

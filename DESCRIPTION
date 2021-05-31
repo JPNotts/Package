@@ -19,7 +19,8 @@ Imports:
     shinyjs,
     shinythemes,
     pracma,
-    mvtnorm
+    mvtnorm,
+    fANCOVA
 Suggests: 
     knitr,
     rmarkdown,

@@ -161,7 +161,7 @@ inc.fineness <- function(int.fn, factor){
 #'
 #' @examples
 exper.quantiles <- function(int.fn, end.time, spike.times, ISI.type, hyper.param, t.min = 0, do.log = FALSE){
-  q <- q.t(int.fn, end.time, spike.times, ISI.type, hyper.param, t.min, do.log=do.log)
+  q <- q.t(int.fn = int.fn, end.time=end.time, spike.times=spike.times, ISI.type=ISI.type, hyper =hyper.param, t.min = t.min, do.log=do.log)
   q[which(q<0)] =0 #Note by definition q should be positive, therefor set numerical negative values to zero.
   time.step <- end.time/(length(int.fn)-1)
   R <- R.t(q, time.step)

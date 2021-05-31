@@ -1,0 +1,466 @@
+# ClassicData_Analysis
+## Put all the required data into a single file 
+ # directory <- '/Users/jakepowell/Desktop/Tom_Data_Raw/Dynamic Stimulation Data/Waves/141204_HEK_CAR_sineP1200_3/'
+ directory <- getwd()
+ check <- check_result(directory)
+ ignore <- as.numeric(check$issues_seq)
+{
+
+  # 1) Collect all files into one .RData file. 
+  rm(list = ls())
+  spikes <- read.csv('spikes.csv')[,-1]
+  raw <- read.csv('data.csv')
+  recordingWindow <- raw[,1]
+  raw <- raw[,-1]
+  threshold <- read.csv('store.csv')[,-1]
+  if(file.exists('Stim.csv')){
+    Stimulus <- read.csv('Stim.csv')[,-1]
+  }
+  
+  # Store the pwc results in one variable, PWC. 
+  nspikes <- ncol(spikes)
+  ISI.list <- c('Gamma', 'InverseGaussian','LogNormal','Exponential','Weibull')
+  PWC <- list('Gamma'=NULL, 'InverseGaussian'=NULL,'LogNormal'=NULL,'Exponential'=NULL,'Weibull'=NULL)
+  ISI <-  c('Gamma', 'NewIG','LN','Poisson','Weibull')
+  for(j in 1:length(ISI)){
+    # Fill 4 tables: x_mean, x_low,x_high, ISIparam
+    x_mean <- matrix(NA, ncol=2001, nrow = nspikes)
+    x_low <- matrix(NA, ncol=2001, nrow = nspikes)
+    x_high <- matrix(NA, ncol=2001, nrow = nspikes)
+    ISI_param <- matrix(NA,ncol=8,nrow = nspikes)
+    
+    for(i in 1:nspikes){
+      # Fill 4 tables: x_mean, x_low,x_high, ISIparam
+      if(file.exists(paste0('PWC/Index',ISI[j],i,'.Rdata'))){
+        load(paste0('PWC/Index',ISI[j],i,'.Rdata'))
+        x_mean[i,] <- x.mean$mean
+        x_low[i,] <- x.mean$lower
+        x_high[i,] <- x.mean$upper
+        ISI_param[i,] <- hyper.result 
+      }
+    }
+    cur <- list(x_mean = x_mean, x_low=x_low,x_high = x_high, ISI_param=ISI_param)
+    PWC[[j]] <- cur 
+  }
+  
+  # store the Constant results in one variable, Constant.
+  nspikes <- ncol(spikes)
+  ISI.list <- c('Gamma', 'InverseGaussian','LogNormal','Exponential','Weibull')
+  Constant <- list('Gamma'=NULL, 'InverseGaussian'=NULL,'LogNormal'=NULL,'Exponential'=NULL,'Weibull'=NULL)
+  ISI <-  c('Gamma', 'NewIG','LN','Poisson','Weibull')
+  for(j in 1:length(ISI)){
+    # Fill 4 tables: x_mean, x_low,x_high, ISIparam
+    x <- matrix(NA, ncol=8, nrow = nspikes)
+    ISI_param <- matrix(NA,ncol=8,nrow = nspikes)
+    
+    for(i in 1:nspikes){
+      # Fill 4 tables: x_mean, x_low,x_high, ISIparam
+      if(file.exists(paste0('Constant/Cons',ISI[j],i,'.Rdata'))){
+        load(paste0('Constant/Cons',ISI[j],i,'.Rdata'))
+        x[i,] <- x.result
+        ISI_param[i,] <- hyper.result 
+      }
+    }
+    cur <- list(x = x, ISI_param=ISI_param)
+    Constant[[j]] <- cur 
+  }
+  
+  # Store the GP results in one variable, GP. 
+  GP <- NULL
+  nspikes <- ncol(spikes)
+  ISI.list <- c('Gamma', 'InverseGaussian','LogNormal','Exponential','Weibull')
+  GP <- list('Gamma'=NULL, 'InverseGaussian'=NULL,'LogNormal'=NULL,'Exponential'=NULL,'Weibull'=NULL)
+  ISI <-  c('Gamma', 'NewIG','LN','Poisson','Weibull')
+  for(j in 1:length(ISI)){
+    # Fill 4 tables: x_mean, x_low,x_high, ISIparam
+    x_mean <- matrix(NA, ncol=2001, nrow = nspikes)
+    x_low <- matrix(NA, ncol=2001, nrow = nspikes)
+    x_high <- matrix(NA, ncol=2001, nrow = nspikes)
+    ISI_param <- matrix(NA,ncol=8,nrow = nspikes)
+
+    for(i in 1:nspikes){
+      # Fill 4 tables: x_mean, x_low,x_high, ISIparam
+      if(file.exists(paste0('GP/Index',ISI[j],i,'.Rdata'))){
+        load(paste0('GP/Index',ISI[j],i,'.Rdata'))
+        x_mean[i,] <- x.mean$mean  ; x_mean[i,2001] <- x_mean[i,2000]
+        x_low[i,] <- x.mean$lower ; x_low[i,2001] <- x_low[i,2000]
+        x_high[i,] <- x.mean$upper ; x_high[i,2001] <- x_high[i,2000]
+        ISI_param[i,] <- hyper.result
+      }
+    }
+    cur <- list(x_mean = x_mean, x_low=x_low,x_high = x_high, ISI_param=ISI_param)
+    GP[[j]] <- cur
+  }
+  
+  save(recordingWindow,spikes,raw,threshold,PWC,Constant, GP, file='Results.Rdata')
+  # save(recordingWindow,spikes,raw,threshold,PWC,Constant, GP,Stimulus, file='Results.Rdata')
+  
+  
+}
+
+## Then use single file to:
+directory <- getwd()
+filepath <- paste0(directory,'/Results.Rdata')
+load(filepath)
+
+## - Rastor plot of all spikes. 
+source('~/Desktop/Package/R/Analysis.R')
+pdf('Rastor_of_spikes.pdf')
+rastor(spikes, rm.empty = T)
+dev.off()
+
+## - Create .csv file with all the ISI param details. 
+{
+  # Get standard database with all details
+  all.hyp <- NULL 
+  files <- list.files(getwd(), recursive = T)
+  for(i in 1:length(files)){
+    file.cur <- files[i]
+    file.cur
+    if(grepl('Rdata',file.cur, fixed=T)){
+      load(file.cur) 
+      
+      if(exists('hyper.result')){
+        # Extract ISI dist.
+        types <- c('Gamma', 'LN',  'IG', 'Wei')
+        for(j in 1:length(types)){
+          if(grepl(types[j],file.cur, fixed=T)){
+            ISI.cur <- types[j]
+          }
+        }
+        ISI.cur
+        # Extract sequence number
+        seq.no <- readr::parse_number(file.cur)
+        
+        # Extract method
+        types <- c('Con', 'GP', 'PWC')
+        for(i in 1:length(types)){
+          if(grepl(types[i],file.cur, fixed=T)){
+            meth.cur <- types[i]
+          }
+        }
+        meth.cur
+        
+        hyp.cur <- c(seq.no,meth.cur,ISI.cur, hyper.result)
+        all.hyp <- rbind(all.hyp,hyp.cur)
+        rm(hyper.result)
+      }
+      
+    }
+  }
+  
+  colnames(all.hyp) = c('Seq Number', 'Prior', 'ISI,type','min','2.5%', '25%','50%', '75%', '97.5%', 'max', 'Mean')
+  all.hyp[,4:11] <- as.numeric(all.hyp[,4:11])
+  # all.hyp[all.hyp[,1] == 3,]
+  data <- all.hyp
+  
+  regions <- paste0('[',round(data[,5],digits=2),', ', round(data[,9],digits=2),']')
+  spikes <- read.csv('spikes.csv')[,-1]
+  no.spikes <- apply(spikes,2, function(x) length(x[!is.na(x)])-1)
+  
+  new <- cbind(data[,1:3],round(data[,11],digits=4), round(data[,7],digits=4), regions, no.spikes[data[,1]])
+
+  colnames(new) <- c('Seq.Number', 'Prior', 'ISI.type', 'mean', 'median', '95% interval', 'No. Spikes')
+  head(new)
+  write.csv(new, file='ISIparam_database.csv')
+  
+}
+
+## - Plot all individual intensity plots (table for constant).
+{
+  dir.create(paste0(directory, '/Individual_intensity_functions'), showWarnings = F)
+  
+  # For Constant
+  ISI.type <- names(Constant)
+  Constant.database <- NULL
+  for(i in 1:length(Constant)){
+    for(j in 1:ncol(spikes)){
+      if(!is.na(Constant[[i]]$x[j,1])){
+        cur <- c(round(Constant[[i]]$x[j,8],digits=4), paste0('[',round(Constant[[i]]$x[j,2],digits=4),', ',round(Constant[[i]]$x[j,7],digits=4),']'),
+                 round(Constant[[i]]$ISI_param[j,8],digits=4), paste0('[',round(Constant[[i]]$ISI_param[j,2],digits=4),', ',round(Constant[[i]]$ISI_param[j,7],digits=4),']'))
+        Constant.database <- rbind(Constant.database, c(j,ISI.type[i],cur))
+      }
+    }
+  }
+  colnames(Constant.database) <- c('Spike seq', 'ISI type', 'mean intensity', '95% intensity', 'mean ISI param', '95% ISI param')
+  write.csv(Constant.database, file = paste0(directory,'/Constant_database.csv'),row.names=FALSE)
+  
+  # For PWC model
+  new.dir <- paste0(directory, '/Individual_intensity_functions/PWC')
+  dir.create(new.dir, showWarnings = F)
+  ISI.type <- names(PWC)
+  for(i in 1:length(PWC)){
+    for(j in 1:ncol(spikes)){
+      if(!is.na(PWC[[i]]$x_mean[j,1])){ ## Make sure we have an inferred intensity
+        
+        # Get spikes and end time.
+        s <- spikes[,j][!is.na(spikes[,j])]
+        end.time <- max(s) ; s <- s[-length(s)]
+        
+        pdf(paste0(new.dir,'/',ISI.type[i],j,'.pdf'))
+        mar.default <- c(5,4,4,2) + 0.1
+        par(mar = mar.default + c(0, 1, 0, 0))
+        t <- seq(0,end.time,end.time/2000)
+        plot(t, PWC[[i]]$x_high[j,], type='n', xlab= 'Time (s)', ylab = 'Intensity', cex.lab = 2 , cex.axis = 1.8, ylim = c(0,max(PWC[[i]]$x_high[j,])))
+        polygon(c(t,rev(t)), c(PWC[[i]]$x_low[j,],rev(PWC[[i]]$x_high[j,])), col = rgb(1,0,0,alpha=0.5), border=NA )
+        lines(t, PWC[[i]]$x_mean[j,],col=rgb(0,0,0,alpha=0.9),lwd=4)
+        rug(s,ticksize=0.05,lwd=2)
+        dev.off()
+      }
+    }
+  }
+  
+  # For GP model
+  new.dir <- paste0(directory, '/Individual_intensity_functions/GP')
+  dir.create(new.dir, showWarnings = F)
+  ISI.type <- names(GP)
+  for(i in 1:length(GP)){
+    for(j in 1:ncol(spikes)){
+      if(!is.na(GP[[i]]$x_mean[j,1])){ ## Make sure we have an inferred intensity
+        
+        # Get spikes and end time.
+        s <- spikes[,j][!is.na(spikes[,j])]
+        end.time <- max(s) ; s <- s[-length(s)]
+        
+        pdf(paste0(new.dir,'/',ISI.type[i],j,'.pdf'))
+        mar.default <- c(5,4,4,2) + 0.1
+        par(mar = mar.default + c(0, 1, 0, 0))
+        t <- seq(0,end.time,end.time/2000)
+        plot(t, GP[[i]]$x_high[j,], type='n', xlab= 'Time (s)', ylab = 'Intensity', cex.lab = 2 , cex.axis = 1.8, ylim = c(0,max(GP[[i]]$x_high[j,])))
+        polygon(c(t,rev(t)), c(GP[[i]]$x_low[j,],rev(GP[[i]]$x_high[j,])), col = rgb(1,0,0,alpha=0.5), border=NA )
+        lines(t, GP[[i]]$x_mean[j,],col=rgb(0,0,0,alpha=0.9),lwd=4)
+        rug(s,ticksize=0.05,lwd=2)
+        dev.off()
+      }
+    }
+  }
+}
+
+## - Plot ISI intensity comparisons.
+{
+  dir.create(paste0(directory, '/ISI_intensity_comparisions'), showWarnings = F)
+  new.dir <- paste0(directory, '/ISI_intensity_comparisions/PWC')
+  dir.create(new.dir, showWarnings = F)
+  ISI.type <- names(PWC)
+  for(i in 1:ncol(spikes)){
+    # If we have spikes do:
+    if(!is.na(spikes[1,i])){
+      # Work out the maximum height required in the plot. 
+      max.intensity <- -10
+      for(j in 1:length(ISI.type)){
+        max.intensity <- max(max.intensity, PWC[[j]]$x_high[i,], na.rm = T)
+      }
+      
+      # If we don't have any intensities break out of the current loop. 
+      if(max.intensity<0 || is.na(max.intensity)){
+        next
+      }
+      
+      # Get spikes and end time.
+      s <- spikes[,i][!is.na(spikes[,i])]
+      end.time <- max(s) ; s <- s[-length(s)]
+      
+      colo_shade <-viridis::viridis(length(ISI.type),alpha=0.5)  
+      colo <-viridis::viridis(length(ISI.type),alpha=1)  
+      
+      pdf(paste0(new.dir,'/spike_seq_',i,'.pdf'))
+      mar.default <- c(5,4,4,2) + 0.1
+      par(mar = mar.default + c(0, 1, 0, 0))
+      t <- seq(0,end.time,end.time/2000)
+      plot(0,0, type='n', xlab= 'Time (s)', ylab = 'Intensity', cex.lab = 2 , cex.axis = 1.8, ylim = c(0,max.intensity), xlim = c(0,end.time))
+      for(j in 1:length(ISI.type)){
+        polygon(c(t,rev(t)), c(PWC[[j]]$x_low[i,],rev(PWC[[j]]$x_high[i,])), col = colo_shade[j], border=NA )
+      }
+      for(j in 1:length(ISI.type)){
+        lines(t, PWC[[j]]$x_mean[i,],col=colo[j],lwd=4)
+      }
+      rug(s,ticksize=0.05,lwd=2)
+      legend('topright', col = colo, legend = ISI.type, lty = rep(1,length(ISI.type)))
+      dev.off()
+      
+    }
+    
+  }
+  
+  new.dir <- paste0(directory, '/ISI_intensity_comparisions/GP')
+  dir.create(new.dir, showWarnings = F)
+  ISI.type <- names(GP)
+  for(i in 1:ncol(spikes)){
+    # If we have spikes do:
+    if(!is.na(spikes[1,i])){
+      # Work out the maximum height required in the plot. 
+      max.intensity <- -10
+      for(j in 1:length(ISI.type)){
+        max.intensity <- max(max.intensity, GP[[j]]$x_high[i,], na.rm = T)
+      }
+      
+      # If we don't have any intensities break out of the current loop. 
+      if(max.intensity<0 || is.na(max.intensity)){
+        next
+      }
+      
+      # Get spikes and end time.
+      s <- spikes[,i][!is.na(spikes[,i])]
+      end.time <- max(s) ; s <- s[-length(s)]
+      
+      colo_shade <-viridis::viridis(length(ISI.type),alpha=0.5)  
+      colo <-viridis::viridis(length(ISI.type),alpha=1)  
+      
+      pdf(paste0(new.dir,'/spike_seq_',i,'.pdf'))
+      mar.default <- c(5,4,4,2) + 0.1
+      par(mar = mar.default + c(0, 1, 0, 0))
+      t <- seq(0,end.time,end.time/2000)
+      plot(0,0, type='n', xlab= 'Time (s)', ylab = 'Intensity', cex.lab = 2 , cex.axis = 1.8, ylim = c(0,max.intensity), xlim = c(0,end.time))
+      for(j in 1:length(ISI.type)){
+        polygon(c(t,rev(t)), c(GP[[j]]$x_low[i,],rev(GP[[j]]$x_high[i,])), col = colo_shade[j], border=NA )
+      }
+      for(j in 1:length(ISI.type)){
+        lines(t, GP[[j]]$x_mean[i,],col=colo[j],lwd=4)
+      }
+      rug(s,ticksize=0.05,lwd=2)
+      legend('topright', col = colo, legend = ISI.type, lty = rep(1,length(ISI.type)))
+      dev.off()
+      
+    }
+    
+  }
+  
+  new.dir <- paste0(directory, '/ISI_intensity_comparisions/Constant')
+  dir.create(new.dir, showWarnings = F)
+  ISI.type <- names(Constant)
+  for(i in 1:ncol(spikes)){
+    # If we have spikes do:
+    if(!is.na(spikes[1,i])){
+      # Work out the maximum height required in the plot. 
+      max.intensity <- -10
+      for(j in 1:length(ISI.type)){
+        max.intensity <- max(max.intensity, GP[[j]]$x_high[i,], na.rm = T)
+      }
+      
+      # If we don't have any intensities break out of the current loop. 
+      if(max.intensity<0 || is.na(max.intensity)){
+        next
+      }
+      
+      # Combine data for box plot
+      quantiles <- NULL ; means = NULL
+      for(j in 1:length(ISI.type)){
+        quantiles <- cbind(quantiles, Constant[[j]]$x[i,c(1,3,4,5,7)])
+        means <- c(means,Constant[[j]]$x[i,8])
+      }
+      colnames(quantiles) <- c('Gam', 'IG', 'LN', 'Poi', 'Wei')
+      
+      pdf(paste0(new.dir,'/spike_seq_',i,'.pdf'))
+      mar.default <- c(5,4,4,2) + 0.1
+      par(mar = mar.default + c(0, 1, 0, 0))
+      boxplot(quantiles, xlab = 'ISI type', ylab = 'Intensity', cex.lab = 2 , cex.axis = 1.5)
+      points(1:length(ISI.type), means,col=2,pch=20)
+      grid(nx=0,ny=10)
+      dev.off()
+      
+    }
+    
+  }
+  
+  
+}
+
+## - Plot Model Intensity comparisons. 
+{
+  ISI.type <- names(PWC)
+  dir.create(paste0(directory, '/Model_intensity_comparisions'), showWarnings = F)
+  for(i in 1:length(ISI.type)){
+    new.dir <- paste0(directory, '/Model_intensity_comparisions/',ISI.type[i])
+    dir.create(new.dir, showWarnings = F)
+  
+      for(ii in 1:ncol(spikes)){
+      # If we have spikes do:
+      if(!is.na(spikes[1,ii])){
+        # Work out the maximum height required in the plot. 
+        max.intensity <- -10
+        max.intensity <- max(max.intensity, PWC[[i]]$x_high[ii,],GP[[i]]$x_high[ii,], Constant[[i]]$x[ii,6], na.rm = T)
+        
+        # If we don't have any intensities break out of the current loop. 
+        if(max.intensity<0 || is.na(max.intensity)){
+          next
+        }
+        
+        # Get spikes and end time.
+        s <- spikes[,ii][!is.na(spikes[,ii])]
+        end.time <- max(s) ; s <- s[-length(s)]
+        
+        colo_shade <-viridis::viridis(3,alpha=0.5)  
+        colo <-viridis::viridis(3,alpha=1)  
+        
+        pdf(paste0(new.dir,'/spike_seq_',ii,'.pdf'))
+        mar.default <- c(5,4,4,2) + 0.1
+        par(mar = mar.default + c(0, 1, 0, 0))
+        t <- seq(0,end.time,end.time/2000)
+        plot(0,0, type='n', xlab= 'Time (s)', ylab = 'Intensity', cex.lab = 2 , cex.axis = 1.8, ylim = c(0,max.intensity), xlim = c(0,end.time))
+        polygon(c(t,rev(t)), c(PWC[[i]]$x_low[ii,],rev(PWC[[i]]$x_high[ii,])), col = colo_shade[1], border=NA )
+        polygon(c(t,rev(t)), c(GP[[i]]$x_low[ii,],rev(GP[[i]]$x_high[ii,])), col = colo_shade[2], border=NA )
+        polygon(c(0,end.time,end.time,0), c(rep(Constant[[i]]$x[ii,2],2),rep(Constant[[i]]$x[ii,6],2)), col = colo_shade[3], border=NA )
+        
+        lines(t, PWC[[i]]$x_mean[ii,],col=colo[1],lwd=4)
+        lines(t, GP[[i]]$x_mean[ii,],col=colo[2],lwd=4)
+        lines(c(0,end.time), rep(Constant[[i]]$x[ii,8],2),col=colo[3],lwd=4)
+        rug(s,ticksize=0.05,lwd=2)
+        legend('topright', col = colo, legend = c('PWC', 'GP','Constant'), lty = rep(1,length(ISI.type)))
+        dev.off()
+        
+      }
+      
+    }
+    
+  }
+}
+
+## - KS/QQ for each model type. 
+ source('~/Desktop/Package/R/Analysis.R')
+ source('~/Desktop/Package/R/QQ_KS.R')
+ source('~/Desktop/Package/R/Shared.R')
+ filepath <- paste0(directory,'/Results.Rdata')
+KK_QQ_PWC <- get_QQ_KS(filepath, model = 'PWC', return_val = T, min.spikes= 18, ignore = ignore)
+KK_QQ_Con <- get_QQ_KS(filepath, model = 'Constant', return_val = T, min.spikes= 18, ignore = ignore,rescale=T)
+KK_QQ_GP <- get_QQ_KS(filepath, model = 'GP', return_val = T, min.spikes= 18, ignore = ignore,rescale=T)
+
+new.dir <- paste0(directory,'/QQ_KS')
+dir.create(new.dir, showWarnings = F)
+
+pdf(paste0(new.dir,'/QQ_slope_PWC.pdf'))
+boxplot(KK_QQ_PWC$slopes$QQ)
+abline(h=1, lty='dotted')
+dev.off()
+
+pdf(paste0(new.dir,'/KS_slope_PWC.pdf'))
+boxplot(KK_QQ_PWC$slopes$KS)
+abline(h=1, lty='dotted')
+dev.off()
+
+pdf(paste0(new.dir,'/QQ_slope_GP.pdf'))
+boxplot(KK_QQ_GP$slopes$QQ)
+abline(h=1, lty='dotted')
+dev.off()
+
+pdf(paste0(new.dir,'/KS_slope_GP.pdf'))
+boxplot(KK_QQ_GP$slopes$KS)
+abline(h=1, lty='dotted')
+dev.off()
+
+pdf(paste0(new.dir,'/QQ_slope_Con.pdf'))
+boxplot(KK_QQ_Con$slopes$QQ)
+abline(h=1, lty='dotted')
+dev.off()
+
+pdf(paste0(new.dir,'/KS_slope_Con.pdf'))
+boxplot(KK_QQ_Con$slopes$KS)
+abline(h=1, lty='dotted')
+dev.off()
+
+
+
+
+
+ans <- get_QQ_KS_singleISI(filepath,model = 'PWC',ISI.type ='LogNormal', min.spikes = 18)
+rbind(apply(ans$quantiles$model,2,function(x) length(x[!is.na(x)]) ), 
+      apply(ans$quantiles$exper,2,function(x) length(x[!is.na(x)]) ) )

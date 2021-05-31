@@ -31,5 +31,5 @@ end.time = 20
 t <- seq(0,20,0.01) ; int.fn <- cos(t/5) + 1.5
 ISI.type = 'Gamma' ; hyper = 5 ; T.min = NULL
 set.seed(12)
-Spikes(end.time, int.fn, hyper, steps =1000, T.min = T.min, ISI.type = "Gamma")
+simulate_spikes(end.time, int.fn, hyper, steps =1000, T.min = T.min, ISI.type = "Gamma",sequences = 1)
 ```

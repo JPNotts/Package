@@ -60,7 +60,7 @@ server <- function(input, output,session) {
     shinyjs::enable("download")
     # Get the inputs
     end.time <- input$end.time ; t.min <- input$t.min ; ISI <- input$ISI ; multi <- input$multi ; int.fn <- input$int.fn ; hyper <- input$hyper
-    d.spikes <- SimSpikes::MultiSpikes(input$end.time, int.fn(), input$hyper, steps =2000, T.min = input$t.min, ISI.type  = ISI(), multi = input$multi, add.end = TRUE, do.log = T)
+    d.spikes <- SimSpikes::simulate_spikes(input$end.time, int.fn(), input$hyper, steps =2000, T.min = input$t.min, ISI.type  = ISI(), multi = input$multi, add.end = TRUE, do.log = T)
     return(list(spikes = d.spikes,  end.time =end.time, t.min=t.min, ISI=ISI, multi=multi, int.fn=int.fn, hyper = hyper))
   })
 
