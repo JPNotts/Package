@@ -618,6 +618,19 @@ mcmc_pwc <- function(d.spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kapp
       max.T.min <- min(max.T.min,new.T.max)
     }
   }
+  else if(length(T.min.param) == 1 || length(T.min.param) == 0 ){
+    if(is.na(T.min.param) || is.null(T.min.param)){ T.min.param = 0}
+    # Define T.max so that we don't put forward a value larger then possible.
+    max.T.min <- 100000
+    for(i in 1:ncol(d.spikes)){
+      s <- d.spikes[,i]
+      s <- s[!is.na(s)]
+      new.T.max <- min(s[-1] - s[-length(s)])
+      max.T.min <- min(max.T.min,new.T.max)
+    }
+    if(T.min.param > max.T.min){stop('Tmin too large')}
+    T.min.cur <- T.min.param
+  }
 
   # Calculate the sum of prob, to be used in calculating the probability of k steps.
   sum.of.prob <- sum(stats::dpois(0:k.max,lambda))
@@ -635,8 +648,8 @@ mcmc_pwc <- function(d.spikes,end.time,iter,burn, k.max, lambda, kappa, mu, kapp
   heights <- length(d.spikes)/end.time
   if (length(hyper.param)==2){hyper.cur <- hyper.initial}
   else {hyper.cur <- hyper.param}
-  if (length(T.min.param)==2){T.min.cur <- T.min.initial}
-  else {T.min.cur <- T.min.param}
+  # if (length(T.min.param)==2){T.min.cur <- T.min.initial}
+  # else {T.min.cur <- T.min.param}
 
   # mcmc loop starts here
   pb <- utils::txtProgressBar(min = 1, max = iter+burn, style = 3)

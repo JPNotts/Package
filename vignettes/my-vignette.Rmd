@@ -13,9 +13,9 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-Simulating Spikes is a package, which simulates spikes sequences from 1D inhomogeneous point processes. The simulated spikes could be used as surrogate data when obtaining experimental data is difficult if not impossible. 
+XX is a package, which simulates spikes sequences from 1D inhomogeneous point processes. The simulated spikes could be used as surrogate data when obtaining experimental data is difficult if not impossible. 
 
-In this vignette, we'll use the SimSpikes package to create a plethora of spike sequences with different properties.
+In this vignette, we'll use the XX package to create a plethora of spike sequences with different properties.
 
 To begin, we need to explain the model behind the point process. Our model is fully defined by the intensity function $x(t)$, and choice of distribution with parameter/s $\theta$.
 
@@ -27,9 +27,9 @@ library(SimSpikes)
 
 An example of a single spike sequence simulated in $[0,20]$, where the intensity at time $t$ is given by $x(t) = cos(t/5)+1.5$, and the ISI is a Gamma with parameter $(5,5)$ and no refractory period. 
 ```{r, fig.width= 7, fig.height=7}
-end.time = 20 
-t <- seq(0,20,0.01) ; int.fn <- cos(t/5) + 1.5
-ISI.type = 'Gamma' ; hyper = 5 ; T.min = NULL
-set.seed(12)
-simulate_spikes(end.time, int.fn, hyper, steps =1000, T.min = T.min, ISI.type = "Gamma",sequences = 1)
+# end.time = 20 
+# t <- seq(0,20,0.01) ; int.fn <- cos(t/5) + 1.5
+# ISI.type = 'Gamma' ; hyper = 5 ; T.min = NULL
+# set.seed(12)
+# simulate_spikes(end.time, int.fn, hyper, steps =1000, T.min = T.min, ISI.type = "Gamma",sequences = 1)
 ```

@@ -207,14 +207,27 @@ stat_gp <- function(cov.fn, l,dt.GP = 0.8, steps = 1000) {
   wc <- Nw * dw
 
   ## generate stochastic process with dt close to intial guess di_GP
-  Nw <- max(ceiling((steps+1)*dt.GP*wc/(2*pi)),2)
-  # # print(Nw)
+  # Nw <- max(ceiling((steps+1)*dt.GP*wc/(2*pi)),2)
+    # print(Nw)
   # Nw <- Nw.input
-  # Nw = 128
+   Nw = 128
   dw2 <- wc/Nw
   T0 <- 2 * pi / dw2
   Mw <- floor(T0 / dt.GP)
   dt <- T0 / Mw
+  
+  # # First fix N and find the corresponding M value
+  # M <- (2*pi*Nw)/(wc*dt.GP) ;M
+  # # best M for computation larger than M
+  # M.new <- min(2^(floor(log((2*pi*Nw)/(wc*dt.GP),base=2))) 
+  # 
+  # ; M.new
+  # wc.new <- (2*pi*Nw)/(M.new*dt.GP) ;wc.new
+  # 
+  # Mw <- M.new ; wc <- wc.new ; dt <- dt.GP
+  # dw2 <- wc/Nw
+  # T0 <- 2 * pi / dw2
+  
 
   if (dt > pi / wc)
     stop('Reduce dt to be consistent with cut-off frequency wc')

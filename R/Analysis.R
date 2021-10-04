@@ -33,7 +33,7 @@ rastor <- function(spikes, add = FALSE, main='', rm.empty = T){
 
   # First create the plot
   if(!add){
-    plot(0,0,type = "n", ylim = c(1,(ncol(spikes)+1)), xlim = c(0,max(spikes[!is.na(spikes)])),
+    plot(0,0,type = "n", ylim = c(1,(ncol(spikes)+1)), xlim = c(0,max(spikes,na.rm=T)),
          xlab = 'Time (s)',
          # xlab ='', xaxt='n',
          yaxt = "n", ylab = "", cex.lab = 1.8, cex.axis = 1.6, main=main)
@@ -47,10 +47,10 @@ rastor <- function(spikes, add = FALSE, main='', rm.empty = T){
     points(spikes.cur, y.axis, pch = 20,cex=1.3)
   }
   # add end of experiment time?
-  end.times <- colMax(spikes)
-  for(i in has.spikes){
-    lines(c(end.times[i],end.times[i]), c(i-0.5,i+0.5), col=2 ,lwd=2)
-  }
+  # end.times <- colMax(spikes)
+  # for(i in has.spikes){
+  #   lines(c(end.times[i],end.times[i]), c(i-0.5,i+0.5), col=2 ,lwd=2)
+  # }
 
 }
 
@@ -77,7 +77,7 @@ for(j in 1:length(models)){
 
   for(i in 1:length(ISI.types)){
     cur <-  files[grepl(ISI.types[i],files)]
-    have.file <- sort(parse_number(cur))
+    have.file <- sort(readr::parse_number(cur))
     out[(j-1)*length(ISI.types) +i,have.file] = 1
   }
 }
@@ -103,9 +103,9 @@ return(list(all =out, issues_seq = error.seq))
 get_QQ_KS_singleISI <- function(filepath,model,ISI.type, min.spikes=0, ignore = NA,rescale=T, opthyp = T){
   # load in the results
   load(filepath)
-
+  print(ISI.type)
   # Check ISI.type is valid
-  if(!(ISI.type %in% c('Gamma', 'LogNormal', 'InverseGaussian', 'Exponential', 'Weibull'))){
+  if(!(ISI.type %in% c('Gamma', 'LogNormal', 'InverseGaussian', 'Exponential', 'Weibull','Exponential_Tmin'))){
     stop('Invalid ISI.type.')
   }
   # Check model type is valid, and we have the model in the data.
@@ -147,38 +147,73 @@ get_QQ_KS_singleISI <- function(filepath,model,ISI.type, min.spikes=0, ignore = 
   if(rescale==T){
     scale <- 20/end.time
     int.fns <- int.fns/scale
-    spikes.seq <- spikes.seq*scale
+    spikes.seq <- t(t(spikes.seq)*scale)
     end.time=rep(20,length(end.time))
   }
 
+  # Set the ISI parameter. (Exponential doesn't have one)
   if(ISI.type != 'Exponential'){
+    # Set as the mean value.
     hyp <- data$ISI_param[required.cells,8]
-    if(opthyp){
-      # function to optimise
-      likelihyp <- function(hyper, parameters ){
-        spikes <- parameters[[1]] ; int.fn <- parameters[[2]] ; end.time <- parameters[[3]] ; ISI.type <- parameters[[4]]
-
-        return(-log_pi_hyper_param(d.spikes = data.frame(spikes), hyper.param=hyper, x=int.fn, end.time = end.time,
-                                   prior.hyper.param = c(1,0.01), T.min = NULL, max.T.min = NA, ISI.type = ISI.type))
+    # Do we want to optimise hyp for the mean intensity function.
+    if(opthyp == T){
+      
+      # Case 1: ISI parameter isn't T.min.
+      if(ISI.type != 'Exponential_Tmin'){
+        # function to optimise
+        likelihyp <- function(hyper, parameters ){
+          spikes <- parameters[[1]] ; int.fn <- parameters[[2]] ; end.time <- parameters[[3]] ; ISI.type <- parameters[[4]]
+          
+          return(-log_pi_hyper_param(d.spikes = data.frame(spikes), hyper.param=hyper, x=int.fn, end.time = end.time,
+                                     prior.hyper.param = c(1,0.01), T.min = NULL, max.T.min = NA, ISI.type = ISI.type))
+        }
+        
+        ISI.orig <- c('Gamma', 'LN', 'Weibull', 'NewIG')
+        ISI.new <- c("Gamma", 'LogNormal', 'Weibull', 'InverseGaussian')
+        ISI <- ISI.orig[which(ISI.type == ISI.new)]
+        
+        hyp <- rep(NA,ncol(spikes.seq))
+        for(kk in 1:ncol(spikes.seq)){
+          print(kk)
+          s <- spikes.seq[,kk][!is.na(spikes.seq[,kk])] ; int.fn <- int.fns[kk,] ; end.time.cur <- max(s,na.rm=T)
+          parameters <- list(s,int.fn,end.time.cur,ISI)
+          hyp[kk] <- optim(par=1, fn =likelihyp, method='Brent', parameters = parameters, lower = 0, upper = 400)$par
+        }
+        
       }
-
-      ISI.orig <- c('Gamma', 'LN', 'Weibull', 'NewIG')
-      ISI.new <- c("Gamma", 'LogNormal', 'Weibull', 'InverseGaussian')
-      ISI <- ISI.orig[which(ISI.type == ISI.new)]
-
-      hyp <- rep(NA,ncol(spikes.seq))
-      for(kk in 1:ncol(spikes.seq)){
-        s <- spikes.seq[,kk][!is.na(spikes.seq[,kk])] ; int.fn <- int.fns[kk,] ; end.time.cur <- max(s,na.rm=T)
-        parameters <- list(s,int.fn,end.time.cur,ISI)
-
-        hyp[kk] <- optim(par=1, fn =likelihyp, method='Brent', parameters = parameters, lower = 0, upper = 500)$par
+     
+      # Case 2: ISI parameter is T.min 
+      if(ISI.type == 'Exponential_Tmin'){
+        # function to optimise
+        likelihyp <- function(hyper, parameters ){
+          spikes <- parameters[[1]] ; int.fn <- parameters[[2]] ; end.time <- parameters[[3]] ; max.T.min <- parameters[[4]]
+          return(-log_pi_Tmin(d.spikes = data.frame(spikes), hyper.param=NA, x=int.fn, end.time = end.time,
+                                     prior.T.min = c(1,0.01), T.min = hyper, max.T.min = max.T.min, ISI.type = 'Poisson'))
+        }
+        
+        t.min <- rep(NA,ncol(spikes.seq))
+        for(kk in 1:ncol(spikes.seq)){
+          s <- spikes.seq[,kk][!is.na(spikes.seq[,kk])] ; int.fn <- int.fns[kk,] ; end.time.cur <- max(s,na.rm=T)
+          upper = min(s[-1] - s[-length(s)]) ; max.T.min = upper
+          parameters <- list(s,int.fn,end.time.cur, max.T.min)
+          
+          t.min[kk] <- optim(par=upper/2, fn =likelihyp, method='Brent', parameters = parameters, lower = 0, upper = upper)$par
+        }
+        
       }
-      print(hyp)
     }
   }
+  else{hyp = NA}
 
-
-  ans <- QQ_KS_data(spikes.seq, int.fns, end.time, ISI.type = ISI.type, hyper.param = hyp,t.min = 0, rm.last.spike = TRUE, do.log = TRUE)
+  if(!exists('t.min')){
+    t.min = 0
+  }
+  
+  # set ISI if we have tmin as well
+  if(ISI.type == 'Exponential_Tmin'){
+    ISI.type = 'Exponential'
+  }
+  ans <- QQ_KS_data(spikes.seq, int.fns, end.time, ISI.type = ISI.type, hyper.param = hyp,t.min = t.min, rm.last.spike = TRUE, do.log = TRUE)
 
 
   return(list(quantiles = ans, req_spikes = required.cells))
@@ -202,7 +237,8 @@ get_QQ_KS <- function(filepath, model,return_val = T, min.spikes = 0,ignore = NA
   invG.data <- get_QQ_KS_singleISI(filepath,model,"InverseGaussian", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
   weibull.data <- get_QQ_KS_singleISI(filepath,model,"Weibull", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
   LN.data <- get_QQ_KS_singleISI(filepath,model,"LogNormal", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp)
-
+  poi_tmin.data <- get_QQ_KS_singleISI(filepath,model,"Exponential_Tmin", min.spikes = min.spikes, ignore=ignore,rescale = rescale, opthyp = opthyp) 
+  
   # get the spikes
   load(filepath)
 
@@ -213,13 +249,14 @@ get_QQ_KS <- function(filepath, model,return_val = T, min.spikes = 0,ignore = NA
   C <- get_slopes(invG.data$quantiles,spikes[invG.data$req_spikes])
   D <- get_slopes(weibull.data$quantiles,spikes[weibull.data$req_spikes])
   E <- get_slopes(LN.data$quantiles,spikes[LN.data$req_spikes])
-
+  G <- get_slopes(poi_tmin.data$quantiles,spikes[poi_tmin.data$req_spikes])
+  
   # Data frames that contain the slopes for each ISI distribution
-  d.QQ <- data.frame(Gam = A$QQ, Poi = B$QQ, InvG = C$QQ, Wei = D$QQ, LN = E$QQ)
-  d.KS <- data.frame(Gam = A$KS, Poi = B$KS, InvG = C$KS, Wei = D$KS, LN = E$KS)
+  d.QQ <- data.frame(Gam = A$QQ, Poi = B$QQ, InvG = C$QQ, Wei = D$QQ, LN = E$QQ, Tmin = G$QQ)
+  d.KS <- data.frame(Gam = A$KS, Poi = B$KS, InvG = C$KS, Wei = D$KS, LN = E$KS, Tmin = G$KS)
 
   if(return_val){
-    QQ_KS <- list(gamma = gamma.data, exponential = poisson.data, inverseGaussian = invG.data, weibull = weibull.data, logNormal = LN.data)
+    QQ_KS <- list(gamma = gamma.data, exponential = poisson.data, inverseGaussian = invG.data, weibull = weibull.data, logNormal = LN.data, exponential_Tmin = poi_tmin.data)
     slopes <- list(QQ = d.QQ, KS = d.KS)
     return(list(QQ_KS = QQ_KS, slopes = slopes))
   }

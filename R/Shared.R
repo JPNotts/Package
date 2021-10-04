@@ -163,10 +163,10 @@ PDF_tmin <- function(t, last.spike, hyper, end.time, x, X, ISI.type, t.min = 0, 
   if(t-last.spike < t.min){
     return(0)
   }
-
   step.size <- end.time/(length(x)-1)
   x <- x[t/step.size]
   if(last.spike - 0 < 1e-10){
+    
     X <- X[t/step.size]
   }
   else{

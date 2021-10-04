@@ -95,6 +95,14 @@ R.t <- function(q, time.step){
 get.tau <- function(R.t, spike.times,end.time){
   time.step <- end.time/(length(R.t)-1)
   spike.index <- spike.times / time.step
+  
+  if(length(which(spike.index<1)) == 1){
+    spike.index[1] = 1
+    warning('First spike occurs at time before first grid value, thus we set spike.index[1]=1.')
+  }
+  if(length(which(spike.index<1)) > 1){
+    warning('Spikes occur at same time grid, need finer grid.')
+  }
 
   tau <- rep(NA, length(spike.index)-1)
   for( i in 1:(length(spike.index)-1)){
@@ -160,13 +168,18 @@ inc.fineness <- function(int.fn, factor){
 #' @export
 #'
 #' @examples
-exper.quantiles <- function(int.fn, end.time, spike.times, ISI.type, hyper.param, t.min = 0, do.log = FALSE){
+exper.quantiles <- function(int.fn, end.time, spike.times, ISI.type, hyper.param, t.min = 0, do.log = FALSE,sort=F){
   q <- q.t(int.fn = int.fn, end.time=end.time, spike.times=spike.times, ISI.type=ISI.type, hyper =hyper.param, t.min = t.min, do.log=do.log)
   q[which(q<0)] =0 #Note by definition q should be positive, therefor set numerical negative values to zero.
   time.step <- end.time/(length(int.fn)-1)
   R <- R.t(q, time.step)
   tau <- get.tau(R, spike.times, end.time)
-  return(sort(tau))
+  if(sort){
+    return(sort(tau))
+  }else{
+    return(tau)
+  }
+
 
 }
 
@@ -197,6 +210,12 @@ QQ_KS_data <- function(spikes.df, int.fn, end.time, ISI.type, hyper.param, t.min
   all.exper.quant <- all.s.k
   all.model.quant <-  all.s.k
 
+  if(length(t.min)==1){
+    t.min <- rep(t.min,no.seq)
+  }
+  if(length(hyper.param)==1){
+    hyper.param <- rep(hyper.param,no.seq)
+  }
 
   # Iterate through all the spike sequences.
   for(i in 1:no.seq){
@@ -207,9 +226,11 @@ QQ_KS_data <- function(spikes.df, int.fn, end.time, ISI.type, hyper.param, t.min
       spikes <- spikes[-length(spikes)]
     }
     N <- length(spikes) - 1
-
-    exper.quant <- exper.quantiles(int.fn[i,], end.time[i],spikes, ISI.type, hyper.param[i],t.min, do.log = do.log)
-    if(any(exper.quant < -1000)){browser()}
+    # if(i==2){
+    #   print(end.time[i]) ; print(spikes); print(ISI.type); print(hyper.param[i]) ; print(t.min[i]) ; print(do.log) ; plot(int.fn[i,],type='l')
+    # }
+    exper.quant <- exper.quantiles(int.fn[i,], end.time[i],spikes, ISI.type, hyper.param[i],t.min[i], do.log = do.log)
+    # if(any(exper.quant < -1000)){browser()}
     all.exper.quant[1:length(exper.quant),i] <- exper.quant
 
     all.model.quant[1:N,i] <- model.quantiles(N)
@@ -260,12 +281,17 @@ get_slopes <- function(data, spikes){
 
     # Get QQ values.
     # Use lm to get the slope.
-    regressionQQ <- stats::lm(model.cur ~ exper.cur)
+    regressionQQ <- stats::lm(model.cur ~ sort(exper.cur))
     slopes.QQ <- c(slopes.QQ, regressionQQ$coefficients[[2]])
+    # 
+    # regress <- stats::lm( exper.cur ~ model.cur)
+    # slope.cur <- max(regress$coefficients[[2]], 1/regress$coefficients[[2]])
+    # slopes.QQ <- c(slopes.QQ, slope.cur)
+   
 
     # Get KS values.
     u.k.cur <- 1 - exp(-exper.cur)
-    regressionKS <- stats::lm(s.k.cur ~ u.k.cur)
+    regressionKS <- stats::lm(s.k.cur ~ sort(u.k.cur))
     slopes.KS <- c(slopes.KS, regressionKS$coefficients[[2]])
 
   }
